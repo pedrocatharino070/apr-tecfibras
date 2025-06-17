@@ -10,13 +10,13 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
         .form-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; color: #343a40; }
-        label, .checkbox-title { display: block; margin-top: 20px; font-weight: 600; color: #495057; }
+        label, .checkbox-title, .declaracao-texto { display: block; margin-top: 20px; font-weight: 600; color: #495057; }
+        .declaracao-texto { font-size: 14px; font-style: italic; font-weight: normal; }
         input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; }
         button { background-color: #007bff; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: 600; }
         #gerarPDF { width: 100%; background-color: #d93636; font-size: 18px; padding: 15px; margin-top: 30px; }
         .image-preview { max-width: 200px; margin-top: 10px; border-radius: 6px; display: none; }
         #signature-pad-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; }
-        .location-wrapper { display: flex; align-items: center; gap: 10px; }
         .checkbox-group div { margin-top: 8px; }
         .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
         #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
@@ -40,11 +40,6 @@
             <input type="text" id="os" required>
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
-            <label for="endereco">Endereço do Local:</label>
-            <div class="location-wrapper">
-                <input type="text" id="endereco" required placeholder="Preencha ou use o GPS">
-                <button type="button" id="getLocationBtn">Usar GPS</button>
-            </div>
             <label for="descricao">Descrição do Serviço:</label>
             <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
             
@@ -58,7 +53,7 @@
 
             <h2>3. ANÁLISE DE RISCOS</h2>
             <div class="checkbox-group" id="riscos-group">
-                <span class="checkbox-title">(Marcar riscos identificados)</span>
+                 <span class="checkbox-title">(Marcar riscos identificados)</span>
                 <div><input type="checkbox" class="risco-item"><label>Queda de altura acima de 2m (NR-35)</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Esforço físico</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Postura inadequada</label></div>
@@ -91,7 +86,20 @@
                 <div><input type="checkbox" class="epi-item"><label>Trava Queda 12mm</label></div>
             </div>
 
-            <h2>5. ASSINATURA</h2>
+            <h2>5. ORIENTAÇÕES DE EMERGÊNCIA</h2>
+            <p class="declaracao-texto">LIGAR PARA ALGUM DOS NUMEROS ABAIXO; APLICAR AS TÉCNICAS DE RESGATE DE ACIDENTADOS; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759</p>
+            <div class="checkbox-group">
+                <div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div>
+            </div>
+
+            <h2>6. DECLARAÇÃO DE CONFORMIDADE NR1</h2>
+            <p class="declaracao-texto">O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
+            <div class="checkbox-group">
+                <div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div>
+                <div><input type="checkbox" id="confirma2" required><label for="confirma2">Confirmo que todos estão capacitados e em boas condições de saúde.</label></div>
+            </div>
+
+            <h2>7. ASSINATURA</h2>
             <label for="signature-canvas">Assine no quadro abaixo:</label>
             <div id="signature-pad-container">
                 <canvas id="signature-pad" width="300" height="150"></canvas>
@@ -108,13 +116,9 @@
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
-            // --- LÓGICA PARA "SELECIONAR TODOS" OS EQUIPAMENTOS ---
             document.getElementById('selectAllEpis').addEventListener('change', function(event) {
                 const isChecked = event.target.checked;
-                const epiCheckboxes = document.querySelectorAll('.epi-item');
-                epiCheckboxes.forEach(checkbox => {
-                    checkbox.checked = isChecked;
-                });
+                document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = isChecked);
             });
 
             function setupImagePreview(inputId, previewId) {
@@ -134,22 +138,6 @@
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
 
-            document.getElementById('getLocationBtn').addEventListener('click', function() {
-                if (navigator.geolocation) {
-                    this.textContent = 'Buscando...';
-                    navigator.geolocation.getCurrentPosition(
-                        position => {
-                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
-                                .then(response => response.json()).then(data => {
-                                    document.getElementById('endereco').value = data.display_name || "Endereço não encontrado.";
-                                    this.textContent = 'Usar GPS';
-                                }).catch(() => { this.textContent = 'Usar GPS'; alert('Erro ao buscar endereço.'); });
-                        },
-                        () => { this.textContent = 'Usar GPS'; alert('Permissão de GPS negada.'); }
-                    );
-                } else { alert('GPS não suportado.'); }
-            });
-
             document.getElementById('gerarPDF').addEventListener('click', function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
                     return alert('Preencha todos os campos obrigatórios e a assinatura.');
@@ -158,58 +146,73 @@
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 let y = 15;
 
-                try {
-                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
-                    if (logo && logo.complete && logo.naturalHeight !== 0) {
-                        pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
-                    }
-                } catch(e) { console.error("Erro ao adicionar logo:", e); }
-                y += 20;
-
-                pdf.setFontSize(16).setFont(undefined, "bold");
-                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
-                y += 15;
-                
+                // DADOS GERAIS
                 const hoje = new Date();
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text(`Data de Emissão:`, 15, y);
                 pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString('pt-BR'), 50, y);
                 y += 7;
-
-                pdf.setFont(undefined, "bold").text(`Técnico:`, 15, y);
-                pdf.setFont(undefined, "normal").text(document.getElementById('tecnico').value, 50, y);
-                y += 7;
-
-                // --- DESCRIÇÃO DO SERVIÇO ADICIONADA AO PDF ---
-                pdf.setFont(undefined, "bold").text(`Descrição do Serviço:`, 15, y);
-                pdf.setFont(undefined, "normal");
-                const descricaoTexto = document.getElementById('descricao').value;
-                const splitDescricao = pdf.splitTextToSize(descricaoTexto, 140); // Largura do texto
-                pdf.text(splitDescricao, 50, y);
-                y += (splitDescricao.length * 5) + 5; // Ajusta Y com base no número de linhas
                 
+                // FUNÇÃO PARA ADICIONAR TEXTO NO PDF
+                function addText(label, value, startY) {
+                    pdf.setFont(undefined, "bold").text(label, 15, startY);
+                    pdf.setFont(undefined, "normal");
+                    const splitText = pdf.splitTextToSize(value, 140);
+                    pdf.text(splitText, 50, startY);
+                    return startY + (splitText.length * 5) + 2;
+                }
+
+                y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
+                y = addText('Técnico:', document.getElementById('tecnico').value, y);
+                y = addText('Descrição do Serviço:', document.getElementById('descricao').value, y);
+                y += 5;
+                
+                // CHECKLISTS
                 function addCheckboxTextToPdf(title, groupId, startY) {
                     let currentY = startY;
                     const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`))
                                             .map(item => item.nextElementSibling.textContent.trim());
-                    
                     if (checkedItems.length > 0) {
                         pdf.setFontSize(10).setFont(undefined, "bold");
                         pdf.text(title, 15, currentY);
                         pdf.setFont(undefined, "normal");
-                        const text = checkedItems.join(', ');
+                        const text = checkedItems.join('; ');
                         const splitText = pdf.splitTextToSize(text, 180);
                         pdf.text(splitText, 15, currentY + 5);
                         currentY += 5 + (splitText.length * 5);
                     }
                     return currentY;
                 };
-
                 y = addCheckboxTextToPdf("Riscos Associados à Tarefa:", "#riscos-group", y);
                 y += 5;
                 y = addCheckboxTextToPdf("Itens Necessários para a Atividade:", "#epis-group", y);
                 y += 10;
                 
+                // LÓGICA DAS DECLARAÇÕES ADICIONADA AO PDF
+                pdf.setFontSize(10).setFont(undefined, "bold");
+                pdf.text("ORIENTAÇÕES PARA EMERGÊNCIA", 15, y);
+                y += 6;
+                pdf.setFontSize(9).setFont(undefined, "normal");
+                const emergenciaTexto = "LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR TÉCNICAS DE RESGATE; REALIZAR PRIMEIROS SOCORROS E COMUNICAR A LIDERANÇA.";
+                pdf.text(pdf.splitTextToSize(emergenciaTexto, 180), 15, y);
+                y += 12;
+                if(document.getElementById('cienteEmergencia').checked) pdf.text("- O colaborador declarou estar ciente das orientações de emergência.", 15, y);
+                y += 10;
+
+                pdf.setFontSize(10).setFont(undefined, "bold");
+                pdf.text("DECLARAÇÃO DE CONFORMIDADE NR1", 15, y);
+                y += 6;
+                pdf.setFontSize(9).setFont(undefined, "normal");
+                const declaracaoTexto = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
+                pdf.text(pdf.splitTextToSize(declaracaoTexto, 180), 15, y);
+                y += 15;
+                if (document.getElementById('confirma1').checked) pdf.text("- Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.", 15, y);
+                y += 5;
+                if (document.getElementById('confirma2').checked) pdf.text("- Também confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15, y);
+                y += 15;
+
+
+                // ASSINATURA FINAL
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text("APR CONCLUÍDA EQUIPE DE ACORDO:", 15, y);
                 y += 5;
