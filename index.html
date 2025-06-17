@@ -74,4 +74,124 @@
             </div>
 
             <h2>5. ASSINATURA</h2>
-            <label for="signature-canvas">Assine no quadro abaixo:</
+            <label for="signature-canvas">Assine no quadro abaixo:</label>
+            <div id="signature-pad-container">
+                <canvas id="signature-pad" width="300" height="150"></canvas>
+            </div>
+            <button type="button" id="clear-signature">Limpar</button>
+        </form>
+    </div>
+
+    <button id="gerarPDF">Gerar APR em PDF</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.jsPDF = window.jspdf.jsPDF;
+
+            const canvas = document.getElementById('signature-pad');
+            const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+            document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
+
+            function setupImagePreview(inputId, previewId) {
+                const inputElement = document.getElementById(inputId);
+                if(inputElement) {
+                    inputElement.addEventListener('change', event => {
+                        const file = event.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = e => document.getElementById(previewId).src = e.target.result;
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+            }
+            setupImagePreview('fotoLocal', 'previewLocal');
+            setupImagePreview('fotoEquipe', 'previewEquipe');
+            
+            document.getElementById('getLocationBtn').addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    this.textContent = 'Buscando...';
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const { latitude, longitude } = position.coords;
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=<span class="math-inline">\{latitude\}&lon\=</span>{longitude}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                document.getElementById('endereco').value = data.display_name || "Endereço não encontrado.";
+                                this.textContent = 'Usar GPS';
+                            })
+                            .catch(() => {
+                                alert('Não foi possível obter o nome do endereço. Preencha manualmente.');
+                                this.textContent = 'Usar GPS';
+                            });
+                    }, () => {
+                        alert('Não foi possível obter a localização. Verifique as permissões do navegador.');
+                        this.textContent = 'Usar GPS';
+                    });
+                } else {
+                    alert('Geolocalização não é suportada por este navegador.');
+                }
+            });
+
+            document.getElementById('gerarPDF').addEventListener('click', function () {
+                if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
+                    alert('Por favor, preencha todos os campos obrigatórios e a assinatura.');
+                    return;
+                }
+
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const page_width = pdf.internal.pageSize.getWidth();
+                let y = 15;
+
+                const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                if (logo.src) {
+                    pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
+                }
+                y += 20;
+
+                pdf.setFontSize(16).setFont("helvetica", "bold");
+                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", page_width / 2, y, { align: 'center' });
+                y += 15;
+
+                // --- Seção de Dados ---
+                pdf.setFontSize(10).setFont("helvetica", "bold");
+                pdf.text("OS:", 15, y);
+                pdf.setFont("helvetica", "normal");
+                pdf.text(document.getElementById('os').value, 30, y);
+                
+                const hoje = new Date();
+                pdf.setFont("helvetica", "bold");
+                pdf.text("Data de Emissão:", 110, y);
+                pdf.setFont("helvetica", "normal");
+                pdf.text(hoje.toLocaleDateString(), 145, y);
+                y += 7;
+
+                // Adiciona as fotos ao PDF
+                const imgLocal = document.getElementById('previewLocal');
+                 if (imgLocal.src.includes('data:image')) {
+                    pdf.setFont("helvetica", "bold").text("Foto do Local:", 15, y);
+                    y += 5;
+                    pdf.addImage(imgLocal.src, 'PNG', 15, y, 80, 60);
+                }
+
+                const imgEquipe = document.getElementById('previewEquipe');
+                if (imgEquipe.src.includes('data:image')) {
+                    pdf.setFont("helvetica", "bold").text("Foto da Equipe:", 110, y);
+                    pdf.addImage(imgEquipe.src, 'PNG', 110, y, 80, 60);
+                }
+                y += 70;
+
+                // --- NOVA SEÇÃO DE DECLARAÇÃO ---
+                pdf.setFontSize(10).setFont("helvetica", "bold");
+                pdf.text("Declaração de Conformidade NR1", 15, y);
+                y += 6;
+
+                pdf.setFontSize(9).setFont("helvetica", "normal");
+                const declaracaoTexto = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
+                const splitDeclaracao = pdf.splitTextToSize(declaracaoTexto, 180); // 180 é a largura do texto
+                pdf.text(splitDeclaracao, 15, y);
+                y += (splitDeclaracao.length * 4); // Ajusta o Y baseado no número de linhas
+
+                y += 5;
+                pdf.text("✓ Afirmo que toda equipe está de posse de todos os EPI/EPC necessários para realização da atividade.", 15, y);
+                y += 5;
+                pdf.text("✓ Também confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15,
