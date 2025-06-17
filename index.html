@@ -5,66 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APR - TecFibras TELECOM</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #eee; }
-        #apr-content { background-color: #fff; padding: 25px; border-radius: 5px; }
-        .form-section { padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .form-container { background-color: #fff; padding: 25px; border-radius: 5px; }
         h1, h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; color: #333; }
-        h1 { text-align: center; }
         label { display: block; margin-top: 15px; font-weight: bold; }
         input, textarea, select { width: 95%; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        .checkbox-group label { font-weight: normal; display: inline; margin-left: 5px;}
-        button { display: inline-block; background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-top: 10px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
         #gerarPDF { width: 100%; background-color: #c00; font-size: 18px; padding: 15px; }
-        img.logo { display: block; margin: 0 auto 20px auto; }
-        .location-wrapper { display: flex; align-items: center; }
-        .location-wrapper input { flex-grow: 1; }
-        .location-wrapper button { margin-left: 10px; flex-shrink: 0; }
+        .image-preview { max-width: 200px; margin-top: 10px; border: 1px solid #ddd; }
+        #signature-pad-container { border: 1px solid #ccc; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="apr-content">
-        <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300" class="logo">
-        
-        <h1>ANÁLISE PRELIMINAR DE RISCO (APR)</h1>
+    <div class="form-container">
+        <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300">
+        <h1>Formulário de APR</h1>
         
         <form id="aprForm" onsubmit="return false;">
-            <div class="form-section">
-                <h2>1. DADOS DO SERVIÇO E EQUIPE</h2>
-                <label for="dataEmissao">Data da Emissão:</label>
-                <input type="date" id="dataEmissao" name="dataEmissao" required>
+            <h2>1. DADOS DO SERVIÇO E EQUIPE</h2>
+            <label for="os">Ordem de Serviço (OS):</label>
+            <input type="text" id="os" name="os" value="542085" required>
+            
+            <label for="tecnico">Técnico Responsável:</label>
+            <input type="text" id="tecnico" name="tecnico" value="Mauricio Ribeiro da Silva Neto" required>
+            
+            <label for="auxiliar">Auxiliar na Atividade:</label>
+            <input type="text" id="auxiliar" name="auxiliar">
 
-                <label for="os">Ordem de Serviço (OS):</label>
-                <input type="text" id="os" name="os" required>
-                
-                <label for="endereco">Endereço do Local:</label>
-                <div class="location-wrapper">
-                    <input type="text" id="endereco" name="endereco" required placeholder="Clique no botão para preencher...">
-                    <button type="button" id="getLocationBtn">Usar GPS</button>
-                </div>
-            </div>
+            <label for="descricao">Descrição da Tarefa:</label>
+            <input type="text" id="descricao" name="descricao" value="instalação de internet">
 
-            <div class="form-section">
-                 <h2>2. REGISTROS FOTOGRÁFICOS</h2>
-                 <p>Obs: As fotos não aparecerão no PDF gerado. Devem ser enviadas separadamente.</p>
-                 <label for="fotoLocal">Foto da Fachada (abre a câmera):</label>
-                 <input type="file" id="fotoLocal" name="fotoLocal" accept="image/*" capture>
-                 
-                 <label for="fotoEquipe">Foto da Equipe (abre a câmera):</label>
-                 <input type="file" id="fotoEquipe" name="fotoEquipe" accept="image/*" capture>
-            </div>
+            <label for="endereco">Endereço do Local:</label>
+            <input type="text" id="endereco" name="endereco" value="R. Gaviao Preto, 17 - Morada da Serra, Cuiabá - MT" required>
 
-            <div class="form-section">
-                <h2>6. APROVAÇÃO E ASSINATURA</h2>
-                <label for="assinaturaNome">Confirmado por (Técnico Responsável):</label>
-                <input type="text" id="assinaturaNome" name="assinaturaNome" placeholder="Digite seu nome completo aqui" required>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="aceite" name="aceite" required>
-                    <label for="aceite">Confirmo que as informações são verdadeiras e assino eletronicamente este documento.</label>
-                </div>
+            <h2>2. REGISTROS FOTOGRÁFICOS</h2>
+            <label for="fotoLocal">Foto do Local:</label>
+            <input type="file" id="fotoLocal" name="fotoLocal" accept="image/*" capture required>
+            <img id="previewLocal" class="image-preview" alt="Preview">
+             
+            <label for="fotoEquipe">Foto da Equipe:</label>
+            <input type="file" id="fotoEquipe" name="fotoEquipe" accept="image/*" capture required>
+            <img id="previewEquipe" class="image-preview" alt="Preview">
+
+            <h2>3. ASSINATURA</h2>
+            <label>Assine no quadro abaixo:</label>
+            <div id="signature-pad-container">
+                <canvas id="signature-pad" width="300" height="150"></canvas>
             </div>
+            <button type="button" id="clear-signature">Limpar Assinatura</button>
         </form>
     </div>
 
@@ -73,60 +64,127 @@
     <script>
         window.jsPDF = window.jspdf.jsPDF;
 
-        // --- FUNCIONALIDADE DO BOTÃO DE GPS ---
-        document.getElementById('getLocationBtn').addEventListener('click', function() {
-            if (navigator.geolocation) {
-                this.textContent = 'Aguarde...';
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    // Usando uma API gratuita para converter coordenadas em endereço
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById('endereco').value = data.display_name;
-                            document.getElementById('getLocationBtn').textContent = 'Usar GPS';
-                        })
-                        .catch(error => {
-                            alert('Não foi possível obter o endereço. Preencha manualmente.');
-                            console.error('Erro na API de geolocalização:', error);
-                            document.getElementById('getLocationBtn').textContent = 'Usar GPS';
-                        });
-                }, function(error) {
-                    alert('Não foi possível obter a localização. Verifique as permissões do navegador.');
-                    console.error('Erro de geolocalização:', error);
-                    document.getElementById('getLocationBtn').textContent = 'Usar GPS';
-                });
-            } else {
-                alert('Geolocalização não é suportada por este navegador.');
-            }
+        // --- INICIALIZAÇÃO DO PAD DE ASSINATURA ---
+        const canvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)'
+        });
+        document.getElementById('clear-signature').addEventListener('click', function() {
+            signaturePad.clear();
         });
 
-        // --- FUNCIONALIDADE PARA GERAR O PDF ---
+        // --- FUNÇÃO PARA EXIBIR PREVIEW DAS FOTOS ---
+        function setupImagePreview(inputId, previewId) {
+            document.getElementById(inputId).addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById(previewId).src = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        setupImagePreview('fotoLocal', 'previewLocal');
+        setupImagePreview('fotoEquipe', 'previewEquipe');
+        
+
+        // --- FUNÇÃO PRINCIPAL PARA GERAR O PDF ---
         document.getElementById('gerarPDF').addEventListener('click', function () {
-            // Validação simples para ver se os campos obrigatórios estão preenchidos
-            if (!document.getElementById('aprForm').checkValidity()) {
-                alert('Por favor, preencha todos os campos obrigatórios antes de gerar o PDF.');
+            if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
+                alert('Por favor, preencha todos os campos e a assinatura antes de gerar o PDF.');
                 return;
             }
 
-            const tecnico = document.getElementById('assinaturaNome').value || 'tecnico';
-            const os = document.getElementById('os').value || '0000';
-            const nomeArquivo = `APR_${os}_${tecnico.replace(/ /g, '_')}.pdf`;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const page_width = pdf.internal.pageSize.getWidth();
+            let y = 15; // Posição vertical inicial
 
-            const content = document.getElementById('apr-content');
+            // --- CABEÇALHO ---
+            pdf.setFontSize(18);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", page_width / 2, y, { align: 'center' });
+            y += 10;
+
+            // --- DADOS DO SERVIÇO ---
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("OS:", 15, y);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(document.getElementById('os').value, 45, y);
+
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Equipe:", 110, y);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(document.getElementById('tecnico').value, 130, y);
+            y += 7;
+
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Descrição:", 15, y);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(document.getElementById('descricao').value, 45, y);
+            y += 7;
+
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Local:", 15, y);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(document.getElementById('endereco').value, 45, y);
+            y += 10;
             
-            html2canvas(content, { scale: 2, useCORS: true }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-                const imgProps= pdf.getImageProperties(imgData);
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.setLineWidth(0.5);
+            pdf.line(10, y - 5, 200, y - 5);
 
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(nomeArquivo);
-            });
+
+            // --- FOTOS E MAPA ---
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Foto do Local:", 15, y);
+            const imgLocal = document.getElementById('previewLocal');
+            if (imgLocal.src) {
+                 pdf.addImage(imgLocal, 'PNG', 15, y + 2, 80, 50);
+            }
+
+            pdf.text("Mapa de Localização:", 110, y);
+            // Usando uma imagem estática de mapa como no exemplo
+            const mapImage = 'https://i.imgur.com/gCCznJc.png';
+            pdf.addImage(mapImage, 'PNG', 110, y + 2, 80, 50);
+            y += 60;
+
+            pdf.text("Foto da Equipe:", 15, y);
+            const imgEquipe = document.getElementById('previewEquipe');
+            if (imgEquipe.src) {
+                pdf.addImage(imgEquipe, 'PNG', 15, y + 2, 80, 50);
+            }
+            y += 60;
+            pdf.line(10, y - 5, 200, y - 5);
+
+
+            // --- RISCOS (exemplo - pode adicionar todos) ---
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Riscos Associados à Tarefa:", 15, y);
+            pdf.setFont("helvetica", "normal");
+            pdf.text("- Queda de altura acima de 2m (NR-35)", 18, y + 5);
+            pdf.text("- Choque elétrico (NR-10)", 18, y + 10);
+            y += 20;
+
+
+            // --- ASSINATURA ---
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Assinatura do Técnico:", 15, y);
+            const signatureImage = signaturePad.toDataURL();
+            pdf.addImage(signatureImage, 'PNG', 15, y + 2, 60, 30);
+            
+            const hoje = new Date();
+            pdf.setFontSize(8);
+            pdf.text(`Assinado eletronicamente em: ${hoje.toLocaleDateString()} às ${hoje.toLocaleTimeString()}`, 15, y + 38);
+
+
+            // --- SALVAR O PDF ---
+            const os = document.getElementById('os').value || '0000';
+            const nomeArquivo = `APR_${os}.pdf`;
+            pdf.save(nomeArquivo);
         });
+
     </script>
 </body>
 </html>
