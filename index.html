@@ -16,14 +16,15 @@
         #gerarPDF { width: 100%; background-color: #d93636; font-size: 18px; padding: 15px; margin-top: 30px; }
         .image-preview { max-width: 200px; margin-top: 10px; border-radius: 6px; display: none; }
         #signature-pad-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; }
-        .checkbox-group div { margin-top: 8px; }
-        .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
+        /* Adicionando estilo para o botão GPS */
+        .location-wrapper { display: flex; align-items: center; gap: 10px; }
+        .location-wrapper input { flex-grow: 1; }
     </style>
 </head>
 <body>
 
     <div class="form-container">
-        <img src="LOGO TECFIBRASa CORTADO (2).jpg" alt="Logo TecFibras" width="300" style="display: block; margin: auto; margin-bottom: 20px;">
+        <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300" style="display: block; margin: auto; margin-bottom: 20px;">
         
         <h1>Formulário de APR</h1>
         <form id="aprForm" onsubmit="return false;">
@@ -40,6 +41,12 @@
             <input type="text" id="os" required>
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
+
+            <label for="endereco">Endereço do Local:</label>
+            <div class="location-wrapper">
+                <input type="text" id="endereco" required placeholder="Preencha ou use o GPS">
+                <button type="button" id="getLocationBtn">Usar GPS</button>
+            </div>
             
             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
             <label for="fotoLocal">Foto do Local:</label>
@@ -49,15 +56,7 @@
             <input type="file" id="fotoEquipe" accept="image/*" capture required>
             <img id="previewEquipe" class="image-preview" alt="Preview">
 
-            <h2>3. ANÁLISE DE RISCOS</h2>
-            <div class="checkbox-group" id="riscos-group">
-                <span class="checkbox-title">(Marcar riscos identificados)</span>
-                <div><input type="checkbox"><label>Queda de altura acima de 2m (NR-35)</label></div>
-                <div><input type="checkbox"><label>Esforço físico</label></div>
-                <div><input type="checkbox"><label>Postura inadequada</label></div>
-            </div>
-
-            <h2>4. ASSINATURA</h2>
+            <h2>3. ASSINATURA</h2>
             <label for="signature-canvas">Assine no quadro abaixo:</label>
             <div id="signature-pad-container">
                 <canvas id="signature-pad" width="300" height="150"></canvas>
@@ -91,6 +90,23 @@
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
 
+            // --- LÓGICA DO BOTÃO GPS REINTEGRADA ---
+            document.getElementById('getLocationBtn').addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    this.textContent = 'Buscando...';
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+                                .then(response => response.json()).then(data => {
+                                    document.getElementById('endereco').value = data.display_name || "Endereço não encontrado.";
+                                    this.textContent = 'Usar GPS';
+                                }).catch(() => { this.textContent = 'Usar GPS'; alert('Erro ao buscar endereço.'); });
+                        },
+                        () => { this.textContent = 'Usar GPS'; alert('Permissão de GPS negada.'); }
+                    );
+                } else { alert('GPS não suportado.'); }
+            });
+
             document.getElementById('gerarPDF').addEventListener('click', function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
                     return alert('Preencha todos os campos obrigatórios e a assinatura.');
@@ -118,7 +134,6 @@
                 pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString('pt-BR'), 50, y);
                 y += 7;
 
-                // --- TEXTO DO PROVEDOR ADICIONADO AO PDF ---
                 pdf.setFont(undefined, "bold").text(`Obra/Provedor:`, 15, y);
                 pdf.setFont(undefined, "normal").text(document.getElementById('provedor').value, 50, y);
                 y += 7;
@@ -129,7 +144,12 @@
 
                 pdf.setFont(undefined, "bold").text(`Técnico:`, 15, y);
                 pdf.setFont(undefined, "normal").text(document.getElementById('tecnico').value, 50, y);
-                y += 10;
+                y += 7;
+                
+                // --- CAMPO DE ENDEREÇO ADICIONADO AO PDF ---
+                pdf.setFont(undefined, "bold").text(`Local:`, 15, y);
+                pdf.setFont(undefined, "normal").text(pdf.splitTextToSize(document.getElementById('endereco').value, 140), 50, y);
+                y += 15;
                 
                 function addImageToPdf(previewId, title, x, yPos) {
                     const img = document.getElementById(previewId);
@@ -146,27 +166,6 @@
                 addImageToPdf('previewEquipe', 'Foto da Equipe:', 110, photoY);
                 y += 70;
                 
-                function addCheckboxTextToPdf(title, groupId, startY) {
-                    let currentY = startY;
-                    const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`))
-                                            .map(item => item.nextElementSibling.textContent.trim());
-                    
-                    if (checkedItems.length > 0) {
-                        pdf.setFontSize(10).setFont(undefined, "bold");
-                        pdf.text(title, 15, currentY);
-                        
-                        pdf.setFont(undefined, "normal");
-                        const text = checkedItems.join(', ');
-                        const splitText = pdf.splitTextToSize(text, 180);
-                        pdf.text(splitText, 15, currentY + 5);
-                        currentY += 5 + (splitText.length * 5);
-                    }
-                    return currentY;
-                };
-
-                y = addCheckboxTextToPdf("Riscos Associados à Tarefa:", "#riscos-group", y);
-                y += 10;
-
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text("APR CONCLUÍDA EQUIPE DE ACORDO:", 15, y);
                 y += 5;
