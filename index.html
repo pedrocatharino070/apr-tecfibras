@@ -7,19 +7,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <style>
-        /* Estilos para deixar o formulário mais limpo e profissional */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
         .form-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; color: #343a40; }
-        h1 { text-align: center; font-size: 24px; }
-        h2 { font-size: 18px; margin-top: 30px; }
         label, .checkbox-title { display: block; margin-top: 20px; font-weight: 600; color: #495057; }
         input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; }
         button { background-color: #007bff; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: 600; }
-        button:hover { background-color: #0056b3; }
         #gerarPDF { width: 100%; background-color: #d93636; font-size: 18px; padding: 15px; margin-top: 30px; }
-        #gerarPDF:hover { background-color: #b82c2c; }
-        .image-preview { max-width: 200px; margin-top: 10px; border: 1px solid #dee2e6; border-radius: 6px; }
+        .image-preview { max-width: 200px; margin-top: 10px; border-radius: 6px; display: none; }
         #signature-pad-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; }
         .location-wrapper { display: flex; align-items: center; gap: 10px; }
         .checkbox-group div { margin-top: 8px; }
@@ -30,49 +25,39 @@
 
     <div class="form-container">
         <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300" style="display: block; margin: auto; margin-bottom: 20px;">
-        
         <h1>Formulário de APR</h1>
-        
         <form id="aprForm" onsubmit="return false;">
-            <h2>1. DADOS DO SERVIÇO E EQUIPE</h2>
+            <h2>1. DADOS DO SERVIÇO</h2>
             <label for="os">Ordem de Serviço (OS):</label>
             <input type="text" id="os" required>
-            
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
-
             <label for="endereco">Endereço do Local:</label>
             <div class="location-wrapper">
                 <input type="text" id="endereco" required placeholder="Preencha ou use o GPS">
                 <button type="button" id="getLocationBtn">Usar GPS</button>
             </div>
-
             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
             <label for="fotoLocal">Foto do Local:</label>
             <input type="file" id="fotoLocal" accept="image/*" capture required>
             <img id="previewLocal" class="image-preview" alt="Preview">
-             
             <label for="fotoEquipe">Foto da Equipe:</label>
             <input type="file" id="fotoEquipe" accept="image/*" capture required>
             <img id="previewEquipe" class="image-preview" alt="Preview">
-
             <h2>3. ANÁLISE DE RISCOS</h2>
             <div class="checkbox-group" id="riscos-group">
-                <span class="checkbox-title">(Marcar os riscos identificados)</span>
+                <span class="checkbox-title">(Marcar riscos identificados)</span>
                 <div><input type="checkbox" id="risco1"><label for="risco1">Queda de altura acima de 2m (NR-35)</label></div>
                 <div><input type="checkbox" id="risco2"><label for="risco2">Esforço físico</label></div>
                 <div><input type="checkbox" id="risco3"><label for="risco3">Postura inadequada</label></div>
-                <div><input type="checkbox" id="risco4"><label for="risco4">Choque elétrico (NR-10)</label></div>
             </div>
-            
-            <h2>4. EQUIPAMENTOS (CHECKLIST)</h2>
+            <h2>4. EQUIPAMENTOS</h2>
             <div class="checkbox-group" id="epis-group">
                 <span class="checkbox-title">(Marcar itens em posse)</span>
                 <div><input type="checkbox" id="epi1"><label for="epi1">Botina de Segurança</label></div>
-                <div><input type="checkbox" id="epi2"><label for="epi2">Capacete Aba Total com Jugular</label></div>
-                <div><input type="checkbox" id="epi3"><label for="epi3">Cinto Tipo Paraquedista</label></div>
+                <div><input type="checkbox" id="epi2"><label for="epi2">Capacete com Jugular</label></div>
+                <div><input type="checkbox" id="epi3"><label for="epi3">Cinto Paraquedista</label></div>
             </div>
-
             <h2>5. ASSINATURA</h2>
             <label for="signature-canvas">Assine no quadro abaixo:</label>
             <div id="signature-pad-container">
@@ -81,117 +66,147 @@
             <button type="button" id="clear-signature">Limpar</button>
         </form>
     </div>
-
     <button id="gerarPDF">Gerar APR em PDF</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             window.jsPDF = window.jspdf.jsPDF;
-
             const canvas = document.getElementById('signature-pad');
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
             function setupImagePreview(inputId, previewId) {
-                const inputElement = document.getElementById(inputId);
-                if(inputElement) {
-                    inputElement.addEventListener('change', event => {
-                        const file = event.target.files[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = e => document.getElementById(previewId).src = e.target.result;
-                            reader.readAsDataURL(file);
-                        }
-                    });
-                }
+                document.getElementById(inputId).addEventListener('change', event => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        const preview = document.getElementById(previewId);
+                        reader.onload = e => {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
             }
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
-            
+
             document.getElementById('getLocationBtn').addEventListener('click', function() {
                 if (navigator.geolocation) {
                     this.textContent = 'Buscando...';
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const { latitude, longitude } = position.coords;
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=<span class="math-inline">\{latitude\}&lon\=</span>{longitude}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                document.getElementById('endereco').value = data.display_name || "Endereço não encontrado.";
-                                this.textContent = 'Usar GPS';
-                            })
-                            .catch(() => {
-                                alert('Não foi possível obter o nome do endereço. Preencha manualmente.');
-                                this.textContent = 'Usar GPS';
-                            });
-                    }, () => {
-                        alert('Não foi possível obter a localização. Verifique as permissões do navegador.');
-                        this.textContent = 'Usar GPS';
-                    });
-                } else {
-                    alert('Geolocalização não é suportada por este navegador.');
-                }
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+                                .then(response => response.json()).then(data => {
+                                    document.getElementById('endereco').value = data.display_name || "Endereço não encontrado.";
+                                    this.textContent = 'Usar GPS';
+                                }).catch(() => { this.textContent = 'Usar GPS'; alert('Erro ao buscar endereço.'); });
+                        },
+                        () => { this.textContent = 'Usar GPS'; alert('Permissão de GPS negada.'); }
+                    );
+                } else { alert('GPS não suportado.'); }
             });
 
-            document.getElementById('gerarPDF').addEventListener('click', function () {
+            document.getElementById('gerarPDF').addEventListener('click', function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
-                    alert('Por favor, preencha todos os campos obrigatórios e a assinatura.');
-                    return;
+                    return alert('Preencha todos os campos e a assinatura.');
                 }
-
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const page_width = pdf.internal.pageSize.getWidth();
+                const pageWidth = pdf.internal.pageSize.getWidth();
                 let y = 15;
 
-                const logo = document.querySelector('img[alt="Logo TecFibras"]');
-                if (logo.src) {
-                    pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
-                }
+                try {
+                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                    if (logo && logo.complete) {
+                        pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
+                    }
+                } catch(e) { console.error("Erro ao adicionar logo:", e); }
                 y += 20;
 
-                pdf.setFontSize(16).setFont("helvetica", "bold");
-                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", page_width / 2, y, { align: 'center' });
+                pdf.setFontSize(16).setFont(undefined, "bold");
+                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
                 y += 15;
 
-                // --- Seção de Dados ---
-                pdf.setFontSize(10).setFont("helvetica", "bold");
-                pdf.text("OS:", 15, y);
-                pdf.setFont("helvetica", "normal");
-                pdf.text(document.getElementById('os').value, 30, y);
-                
+                pdf.setFontSize(10).setFont(undefined, "bold");
                 const hoje = new Date();
-                pdf.setFont("helvetica", "bold");
-                pdf.text("Data de Emissão:", 110, y);
-                pdf.setFont("helvetica", "normal");
-                pdf.text(hoje.toLocaleDateString(), 145, y);
+                pdf.text(`Data de Emissão:`, 15, y);
+                pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString(), 50, y);
                 y += 7;
 
-                // Adiciona as fotos ao PDF
-                const imgLocal = document.getElementById('previewLocal');
-                 if (imgLocal.src.includes('data:image')) {
-                    pdf.setFont("helvetica", "bold").text("Foto do Local:", 15, y);
-                    y += 5;
-                    pdf.addImage(imgLocal.src, 'PNG', 15, y, 80, 60);
-                }
+                pdf.setFont(undefined, "bold").text(`OS:`, 15, y);
+                pdf.setFont(undefined, "normal").text(document.getElementById('os').value, 50, y);
+                y += 7;
 
-                const imgEquipe = document.getElementById('previewEquipe');
-                if (imgEquipe.src.includes('data:image')) {
-                    pdf.setFont("helvetica", "bold").text("Foto da Equipe:", 110, y);
-                    pdf.addImage(imgEquipe.src, 'PNG', 110, y, 80, 60);
-                }
-                y += 70;
+                pdf.setFont(undefined, "bold").text(`Técnico:`, 15, y);
+                pdf.setFont(undefined, "normal").text(document.getElementById('tecnico').value, 50, y);
+                y += 7;
+                
+                pdf.setFont(undefined, "bold").text(`Local:`, 15, y);
+                pdf.setFont(undefined, "normal").text(pdf.splitTextToSize(document.getElementById('endereco').value, 140), 50, y);
+                y += 15;
+                
+                const addImageToPdf = (previewId, title, x, yPos, width, height) => {
+                    const img = document.getElementById(previewId);
+                    if (img && img.src.startsWith('data:image')) {
+                        pdf.setFont(undefined, "bold").text(title, x, yPos);
+                        pdf.addImage(img.src, 'PNG', x, yPos + 2, width, height);
+                        return true;
+                    }
+                    return false;
+                };
 
-                // --- NOVA SEÇÃO DE DECLARAÇÃO ---
-                pdf.setFontSize(10).setFont("helvetica", "bold");
+                let photoY = y;
+                addImageToPdf('previewLocal', 'Foto do Local:', 15, photoY, 80, 60);
+                addImageToPdf('previewEquipe', 'Foto da Equipe:', 110, photoY, 80, 60);
+                y += 65;
+                
+                const addCheckboxSectionToPdf = (title, groupId, startY) => {
+                    let currentY = startY;
+                    pdf.setFontSize(10).setFont(undefined, "bold");
+                    pdf.text(title, 15, currentY);
+                    currentY += 6;
+                    pdf.setFont(undefined, "normal");
+                    const checkedItems = document.querySelectorAll(`${groupId} input[type="checkbox"]:checked`);
+                    if(checkedItems.length > 0){
+                        checkedItems.forEach(item => {
+                            pdf.text(`- ${item.nextElementSibling.textContent.trim()}`, 18, currentY);
+                            currentY += 5;
+                        });
+                    } else {
+                         pdf.text("- Nenhum item selecionado.", 18, currentY);
+                         currentY += 5;
+                    }
+                    return currentY + 3;
+                };
+
+                y = addCheckboxSectionToPdf("Riscos Associados:", "#riscos-group", y);
+                y = addCheckboxSectionToPdf("Equipamentos Utilizados:", "#epis-group", y);
+
+                pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text("Declaração de Conformidade NR1", 15, y);
                 y += 6;
-
-                pdf.setFontSize(9).setFont("helvetica", "normal");
-                const declaracaoTexto = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
-                const splitDeclaracao = pdf.splitTextToSize(declaracaoTexto, 180); // 180 é a largura do texto
-                pdf.text(splitDeclaracao, 15, y);
-                y += (splitDeclaracao.length * 4); // Ajusta o Y baseado no número de linhas
-
+                pdf.setFontSize(9).setFont(undefined, "normal");
+                const declaracao = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
+                pdf.text(pdf.splitTextToSize(declaracao, 180), 15, y);
+                y += 15;
+                pdf.text("✓ Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.", 15, y);
                 y += 5;
-                pdf.text("✓ Afirmo que toda equipe está de posse de todos os EPI/EPC necessários para realização da atividade.", 15, y);
+                pdf.text("✓ Confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15, y);
+                y += 15;
+
+                pdf.setFontSize(10).setFont(undefined, "bold");
+                pdf.text("APR CONCLUÍDA EQUIPE DE ACORDO:", 15, y);
                 y += 5;
-                pdf.text("✓ Também confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15,
+                const signatureImage = signaturePad.toDataURL();
+                pdf.addImage(signatureImage, 'PNG', 15, y, 70, 30);
+                pdf.setFontSize(9).setFont(undefined, "normal");
+                pdf.text(`Assinado por: ${document.getElementById('tecnico').value}`, 95, y + 15);
+                pdf.text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
+
+                pdf.save(`APR_${document.getElementById('os').value}.pdf`);
+            });
+        });
+    </script>
+</body>
+</html>
