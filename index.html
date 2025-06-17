@@ -27,16 +27,11 @@
         <h1>Formulário de APR</h1>
         <form id="aprForm" onsubmit="return false;">
             <h2>1. DADOS DO SERVIÇO</h2>
-            <label for="provedor">Obra/Provedor:</label>
-            <select id="provedor" required>
-                <option value="">-- Selecione um provedor --</option>
-                <option value="Cuiabá Fibra">Cuiabá Fibra</option>
-                <option value="Brasil TecPar">Brasil TecPar</option>
-            </select>
-            
+            <label for="os">Ordem de Serviço (OS):</label>
+            <input type="text" id="os" required>
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
-
+            
             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
             <label for="fotoLocal">Foto do Local:</label>
             <input type="file" id="fotoLocal" accept="image/*" capture required>
@@ -52,24 +47,33 @@
                 <div><input type="checkbox"><label>Esforço físico</label></div>
                 <div><input type="checkbox"><label>Postura inadequada</label></div>
                 <div><input type="checkbox"><label>Choque elétrico (NR-10)</label></div>
+                <div><input type="checkbox"><label>Espaço confinado (NR-33)</label></div>
             </div>
             
             <h2>4. EQUIPAMENTOS (CHECKLIST)</h2>
             <div class="checkbox-group" id="epis-group">
-                <span class="checkbox-title">(Marcar itens em posse)</span>
+                 <span class="checkbox-title">(Marcar itens em posse)</span>
+                <div><input type="checkbox"><label>Anel de Ancoragem 1,5m</label></div>
+                <div><input type="checkbox"><label>Anel de Ancoragem 2m</label></div>
                 <div><input type="checkbox"><label>Botina de Segurança</label></div>
-                <div><input type="checkbox"><label>Capacete com Jugular</label></div>
-                <div><input type="checkbox"><label>Cinto Paraquedista</label></div>
-            </div>
-            
-            <h2>5. DECLARAÇÃO DE CONFORMIDADE</h2>
-            <div class="checkbox-group">
-                <p style="font-size:14px; font-style:italic;">O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde...</p>
-                <div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div>
-                <div><input type="checkbox" id="confirma2" required><label for="confirma2">Confirmo que todos estão capacitados e em boas condições de saúde.</label></div>
+                <div><input type="checkbox"><label>Calça</label></div>
+                <div><input type="checkbox"><label>Camiseta</label></div>
+                <div><input type="checkbox"><label>Caneta de Teste de Tensão 1000V</label></div>
+                <div><input type="checkbox"><label>Capacete Aba Total com Jugular</label></div>
+                <div><input type="checkbox"><label>Cinto Tipo Paraquedista 5 ou 6 Pontas</label></div>
+                <div><input type="checkbox"><label>Corda 12mm 20m</label></div>
+                <div><input type="checkbox"><label>Fita Catraca</label></div>
+                <div><input type="checkbox"><label>Fita Eureka de Ancoragem com ABS</label></div>
+                <div><input type="checkbox"><label>Freio ABS Descensor</label></div>
+                <div><input type="checkbox"><label>Luva de Vaqueta</label></div>
+                <div><input type="checkbox"><label>Mosquetão Oval</label></div>
+                <div><input type="checkbox"><label>Óculos Fumê de Proteção</label></div>
+                <div><input type="checkbox"><label>Óculos Incolor de Proteção</label></div>
+                <div><input type="checkbox"><label>Talabarte de Posicionamento</label></div>
+                <div><input type="checkbox"><label>Trava Queda 12mm</label></div>
             </div>
 
-            <h2>6. ASSINATURA</h2>
+            <h2>5. ASSINATURA</h2>
             <label for="signature-canvas">Assine no quadro abaixo:</label>
             <div id="signature-pad-container">
                 <canvas id="signature-pad" width="300" height="150"></canvas>
@@ -103,26 +107,36 @@
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
 
+            // --- FUNÇÃO PARA GERAR O PDF ---
             document.getElementById('gerarPDF').addEventListener('click', function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
                     return alert('Preencha todos os campos obrigatórios e a assinatura.');
                 }
+
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 let y = 15;
 
-                // --- DADOS INICIAIS ---
+                // Tenta adicionar a logo. Se falhar, o script continua.
+                try {
+                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                    if (logo && logo.complete && logo.naturalHeight !== 0) {
+                        pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
+                    }
+                } catch(e) { console.error("Erro ao adicionar logo:", e); }
+                y += 20;
+
+                pdf.setFontSize(16).setFont(undefined, "bold");
+                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", 105, y, { align: 'center' });
+                y += 15;
+
                 const hoje = new Date();
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text(`Data de Emissão:`, 15, y);
                 pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString('pt-BR'), 50, y);
                 y += 7;
 
-                pdf.setFont(undefined, "bold").text(`Obra/Provedor:`, 15, y);
-                pdf.setFont(undefined, "normal").text(document.getElementById('provedor').value, 50, y);
-                y += 10;
-
-                // --- SEÇÃO DE FOTOS ---
-                const addImageToPdf = (previewId, title, x, yPos, width, height) => {
+                // Adiciona as fotos ao PDF
+                function addImageToPdf(previewId, title, x, yPos, width, height) {
                     const img = document.getElementById(previewId);
                     if (img && img.src.startsWith('data:image')) {
                         pdf.setFont(undefined, "bold").text(title, x, yPos);
@@ -131,14 +145,14 @@
                     }
                     return false;
                 };
-
+                
                 let photoY = y;
                 addImageToPdf('previewLocal', 'Foto do Local:', 15, photoY, 80, 60);
                 addImageToPdf('previewEquipe', 'Foto da Equipe:', 110, photoY, 80, 60);
                 y += 70;
-                
-                // --- SEÇÃO DE CHECKLISTS ---
-                const addCheckboxTextToPdf = (title, groupId, startY) => {
+
+                // Adiciona os checklists ao PDF no formato de texto contínuo
+                function addCheckboxTextToPdf(title, groupId, startY) {
                     let currentY = startY;
                     const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`))
                                             .map(item => item.nextElementSibling.textContent.trim());
@@ -148,7 +162,7 @@
                         pdf.text(title, 15, currentY);
                         
                         pdf.setFont(undefined, "normal");
-                        const text = checkedItems.join('; ');
+                        const text = checkedItems.join(', ');
                         const splitText = pdf.splitTextToSize(text, 180);
                         pdf.text(splitText, 15, currentY + 5);
                         currentY += 5 + (splitText.length * 5);
@@ -161,7 +175,7 @@
                 y = addCheckboxTextToPdf("Itens Necessários para a Atividade:", "#epis-group", y);
                 y += 10;
                 
-                // --- SEÇÃO DE DECLARAÇÃO ---
+                // Adiciona a Declaração de Conformidade ao PDF
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text("Declaração de Conformidade NR1", 15, y);
                 y += 6;
@@ -169,14 +183,9 @@
                 const declaracao = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
                 pdf.text(pdf.splitTextToSize(declaracao, 180), 15, y);
                 y += 15;
-
-                // --- TEXTO CORRIGIDO AQUI ---
-                if (document.getElementById('confirma1').checked) pdf.text("- Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.", 15, y);
-                y += 5;
-                if (document.getElementById('confirma2').checked) pdf.text("- Também confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15, y);
+                
                 y += 15;
 
-                // --- SEÇÃO DE ASSINATURA ---
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text("APR CONCLUÍDA EQUIPE DE ACORDO:", 15, y);
                 y += 5;
@@ -186,7 +195,7 @@
                 pdf.text(`Assinado por: ${document.getElementById('tecnico').value}`, 95, y + 15);
                 pdf.text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
 
-                pdf.save(`APR_TecFibras.pdf`);
+                pdf.save(`APR_${document.getElementById('os').value}.pdf`);
             });
         });
     </script>
