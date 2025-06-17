@@ -53,12 +53,18 @@
 
             <h2>3. ANÁLISE DE RISCOS</h2>
             <div class="checkbox-group" id="riscos-group">
-                 <span class="checkbox-title">(Marcar riscos identificados)</span>
+                <span class="checkbox-title">(Marcar riscos identificados)</span>
                 <div><input type="checkbox" class="risco-item"><label>Queda de altura acima de 2m (NR-35)</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Esforço físico</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Postura inadequada</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Choque elétrico (NR-10)</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Espaço confinado (NR-33)</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Atropelamento</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Insetos ou animais peçonhentos</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Tropeçar/Escorregar</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Cortes e perfurações</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Queda de objetos</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Fuga de energia das partes metálicas no poste</label></div>
             </div>
             
             <h2>4. EQUIPAMENTOS (CHECKLIST)</h2>
@@ -86,20 +92,13 @@
                 <div><input type="checkbox" class="epi-item"><label>Trava Queda 12mm</label></div>
             </div>
 
-            <h2>5. ORIENTAÇÕES DE EMERGÊNCIA</h2>
-            <p class="declaracao-texto">LIGAR PARA ALGUM DOS NUMEROS ABAIXO; APLICAR AS TÉCNICAS DE RESGATE DE ACIDENTADOS; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759</p>
-            <div class="checkbox-group">
-                <div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div>
-            </div>
+            <h2>5. DECLARAÇÕES</h2>
+            <p class="declaracao-texto"><b>ORIENTAÇÕES PARA EMERGÊNCIA:</b> LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR AS TÉCNICAS DE RESGATE; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA.</p>
+            <div class="checkbox-group"><div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div></div>
+            <p class="declaracao-texto" style="margin-top:15px;"><b>DECLARAÇÃO DE CONFORMIDADE NR1:</b> O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
+            <div class="checkbox-group"><div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div></div>
 
-            <h2>6. DECLARAÇÃO DE CONFORMIDADE NR1</h2>
-            <p class="declaracao-texto">O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
-            <div class="checkbox-group">
-                <div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div>
-                <div><input type="checkbox" id="confirma2" required><label for="confirma2">Confirmo que todos estão capacitados e em boas condições de saúde.</label></div>
-            </div>
-
-            <h2>7. ASSINATURA</h2>
+            <h2>6. ASSINATURA</h2>
             <label for="signature-canvas">Assine no quadro abaixo:</label>
             <div id="signature-pad-container">
                 <canvas id="signature-pad" width="300" height="150"></canvas>
@@ -117,8 +116,7 @@
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
             document.getElementById('selectAllEpis').addEventListener('change', function(event) {
-                const isChecked = event.target.checked;
-                document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = isChecked);
+                document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = event.target.checked);
             });
 
             function setupImagePreview(inputId, previewId) {
@@ -146,32 +144,55 @@
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 let y = 15;
 
-                // DADOS GERAIS
+                try {
+                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                    if (logo && logo.complete && logo.naturalHeight !== 0) pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
+                } catch(e) { console.error("Erro ao adicionar logo:", e); }
+                y += 20;
+
+                pdf.setFontSize(16).setFont(undefined, "bold");
+                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
+                y += 15;
+
                 const hoje = new Date();
                 pdf.setFontSize(10).setFont(undefined, "bold");
                 pdf.text(`Data de Emissão:`, 15, y);
                 pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString('pt-BR'), 50, y);
                 y += 7;
                 
-                // FUNÇÃO PARA ADICIONAR TEXTO NO PDF
                 function addText(label, value, startY) {
+                    if(!value) return startY;
                     pdf.setFont(undefined, "bold").text(label, 15, startY);
                     pdf.setFont(undefined, "normal");
                     const splitText = pdf.splitTextToSize(value, 140);
                     pdf.text(splitText, 50, startY);
                     return startY + (splitText.length * 5) + 2;
                 }
-
                 y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
                 y = addText('Técnico:', document.getElementById('tecnico').value, y);
-                y = addText('Descrição do Serviço:', document.getElementById('descricao').value, y);
+                y = addText('Descrição:', document.getElementById('descricao').value, y);
                 y += 5;
                 
-                // CHECKLISTS
+                // --- LÓGICA DAS FOTOS CORRIGIDA E REINTEGRADA ---
+                function addImageToPdf(previewId, title, x, yPos, width, height) {
+                    const img = document.getElementById(previewId);
+                    if (img && img.src.startsWith('data:image')) {
+                        pdf.setFont(undefined, "bold").text(title, x, yPos);
+                        pdf.addImage(img.src, 'PNG', x, yPos + 2, width, height);
+                        return true;
+                    } return false;
+                };
+                let photoY = y;
+                let addedLeft = addImageToPdf('previewLocal', 'Foto do Local:', 15, photoY, 80, 60);
+                let addedRight = addImageToPdf('previewEquipe', 'Foto da Equipe:', 110, photoY, 80, 60);
+                if (addedLeft || addedRight) {
+                    y += 70;
+                }
+
+                // --- CHECKLISTS ---
                 function addCheckboxTextToPdf(title, groupId, startY) {
                     let currentY = startY;
-                    const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`))
-                                            .map(item => item.nextElementSibling.textContent.trim());
+                    const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`)).map(item => item.nextElementSibling.textContent.trim());
                     if (checkedItems.length > 0) {
                         pdf.setFontSize(10).setFont(undefined, "bold");
                         pdf.text(title, 15, currentY);
@@ -183,38 +204,23 @@
                     }
                     return currentY;
                 };
-                y = addCheckboxTextToPdf("Riscos Associados à Tarefa:", "#riscos-group", y);
-                y += 5;
-                y = addCheckboxTextToPdf("Itens Necessários para a Atividade:", "#epis-group", y);
+                y = addCheckboxTextToPdf("Riscos Associados:", "#riscos-group", y);
+                y = addCheckboxTextToPdf("Equipamentos Utilizados:", "#epis-group", y);
                 y += 10;
                 
-                // LÓGICA DAS DECLARAÇÕES ADICIONADA AO PDF
-                pdf.setFontSize(10).setFont(undefined, "bold");
-                pdf.text("ORIENTAÇÕES PARA EMERGÊNCIA", 15, y);
+                // --- DECLARAÇÕES ---
+                pdf.setFontSize(9).setFont(undefined, "bold");
+                pdf.text("Declarações de Ciência e Conformidade:", 15, y);
                 y += 6;
-                pdf.setFontSize(9).setFont(undefined, "normal");
-                const emergenciaTexto = "LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR TÉCNICAS DE RESGATE; REALIZAR PRIMEIROS SOCORROS E COMUNICAR A LIDERANÇA.";
-                pdf.text(pdf.splitTextToSize(emergenciaTexto, 180), 15, y);
-                y += 12;
-                if(document.getElementById('cienteEmergencia').checked) pdf.text("- O colaborador declarou estar ciente das orientações de emergência.", 15, y);
-                y += 10;
-
-                pdf.setFontSize(10).setFont(undefined, "bold");
-                pdf.text("DECLARAÇÃO DE CONFORMIDADE NR1", 15, y);
-                y += 6;
-                pdf.setFontSize(9).setFont(undefined, "normal");
-                const declaracaoTexto = "O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.";
-                pdf.text(pdf.splitTextToSize(declaracaoTexto, 180), 15, y);
-                y += 15;
-                if (document.getElementById('confirma1').checked) pdf.text("- Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.", 15, y);
+                pdf.setFontSize(8).setFont(undefined, "normal");
+                if (document.getElementById('cienteEmergencia').checked) pdf.text("- Colaborador ciente das orientações de emergência.", 15, y);
                 y += 5;
-                if (document.getElementById('confirma2').checked) pdf.text("- Também confirmo que todos os membros da equipe estão capacitados e em boas condições de saúde.", 15, y);
-                y += 15;
-
-
-                // ASSINATURA FINAL
+                if (document.getElementById('confirma1').checked) pdf.text("- Colaborador afirma que a equipe possui todos os EPIs/EPCs necessários.", 15, y);
+                y += 10;
+                
+                // --- ASSINATURA ---
                 pdf.setFontSize(10).setFont(undefined, "bold");
-                pdf.text("APR CONCLUÍDA EQUIPE DE ACORDO:", 15, y);
+                pdf.text("APR CONCLUÍDA E ASSINADA:", 15, y);
                 y += 5;
                 const signatureImage = signaturePad.toDataURL();
                 pdf.addImage(signatureImage, 'PNG', 15, y, 70, 30);
