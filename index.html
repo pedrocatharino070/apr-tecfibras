@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APR - TecFibras TELECOM</title>
+    <style>
+        /* Estilos básicos para o formulário */
+        body { font-family: sans-serif; margin: 2em; }
+        .form-section { background-color: #f4f4f4; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], textarea, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #c00; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <img src="https://i.ibb.co/L9Y00k2/LOGO-TECFIBRASa.jpg" alt="Logo TecFibras" width="300">
+    <h1>ANÁLISE PRELIMINAR DE RISCO (APR)</h1>
+    
+    <form id="aprForm">
+        <div class="form-section">
+            <h2>1. DADOS DO SERVIÇO E EQUIPE</h2>
+            <label for="os">Ordem de Serviço (OS):</label>
+            <input type="text" id="os" name="os" required>
+
+            <label for="contrato">Obra / Contrato:</label>
+            <select id="contrato" name="contrato" required>
+                <option value="">-- Selecione --</option>
+                <option value="Brasil TecPar">Brasil TecPar</option>
+                <option value="Cuiabá Fibra">Cuiabá Fibra</option>
+            </select>
+
+            <label for="tecnico">Técnico Responsável:</label>
+            <input type="text" id="tecnico" name="tecnico" required>
+
+            <label for="auxiliar">Auxiliar na Atividade (se houver):</label>
+            <input type="text" id="auxiliar" name="auxiliar">
+            
+            <label for="descricao">Descrição Detalhada da Tarefa:</label>
+            <textarea id="descricao" name="descricao" rows="3"></textarea>
+            
+            <label for="endereco">Endereço do Local:</label>
+            <input type="text" id="endereco" name="endereco" required>
+        </div>
+
+        <div class="form-section">
+             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
+             <label for="fotoLocal">Foto da Fachada/Frente do Local:</label>
+             <input type="file" id="fotoLocal" name="fotoLocal" accept="image/*">
+             
+             <label for="fotoEquipe">Foto da Equipe Uniformizada no Local:</label>
+             <input type="file" id="fotoEquipe" name="fotoEquipe" accept="image/*">
+        </div>
+        
+        <button type="submit">Gerar APR</button>
+    </form>
+
+</body>
+</html>
