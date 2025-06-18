@@ -93,9 +93,10 @@
             </div>
 
             <h2>5. DECLARAÇÕES</h2>
-            <p class="declaracao-texto"><b>ORIENTAÇÕES PARA EMERGÊNCIA:</b> LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR AS TÉCNICAS DE RESGATE; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA.</p>
+            <p id="textoEmergencia" class="declaracao-texto"><b>ORIENTAÇÕES PARA EMERGÊNCIA:</b> LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR AS TÉCNICAS DE RESGATE; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA.</p>
             <div class="checkbox-group"><div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div></div>
-            <p class="declaracao-texto" style="margin-top:15px;"><b>DECLARAÇÃO DE CONFORMIDADE NR1:</b> O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
+            
+            <p id="textoNR1" class="declaracao-texto" style="margin-top:15px;"><b>DECLARAÇÃO DE CONFORMIDADE NR1:</b> O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
             <div class="checkbox-group"><div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div></div>
 
             <h2>6. ASSINATURA</h2>
@@ -142,42 +143,58 @@
                 }
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = pdf.internal.pageSize.getWidth();
-                let y = 15;
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                let y = 10; // Posição inicial Y
 
+                // --- NOVO: PROTOCOLO NO TOPO DA PÁGINA ---
+                const hoje = new Date();
+                const pad = (n) => n.toString().padStart(2, '0');
+                const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
+                
+                pdf.setFontSize(10).setFont(undefined, "normal");
+                pdf.text(`Protocolo: ${protocolo}`, pageWidth - 15, y, { align: 'right' });
+                y += 15; // Desce a posição para o conteúdo começar abaixo
+
+                // --- CONTEÚDO PRINCIPAL ---
                 try {
                     const logo = document.querySelector('img[alt="Logo TecFibras"]');
-                    if (logo && logo.complete && logo.naturalHeight !== 0) pdf.addImage(logo, 'JPEG', 15, y, 50, 15);
-                } catch(e) { console.error("Erro ao adicionar logo:", e); }
-                y += 20;
+                    if (logo && logo.complete && logo.naturalHeight !== 0) pdf.addImage(logo, 'JPEG', 15, y, 60, 18);
+                } catch (e) { console.error("Erro ao adicionar logo:", e); }
+                y += 5; // Ajusta posição do título
 
                 pdf.setFontSize(16).setFont(undefined, "bold");
-                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
-                y += 15;
+                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y + 10, { align: 'center' });
+                y += 25;
 
-                const hoje = new Date();
-                pdf.setFontSize(10).setFont(undefined, "bold");
-                pdf.text(`Data de Emissão:`, 15, y);
-                pdf.setFont(undefined, "normal").text(hoje.toLocaleDateString('pt-BR'), 50, y);
-                y += 7;
-                
+                // --- SEÇÕES DO FORMULÁRIO ---
+                function addSectionTitle(title, startY) {
+                    pdf.setFontSize(12).setFont(undefined, "bold");
+                    pdf.text(title, 15, startY);
+                    pdf.line(15, startY + 1, pageWidth - 15, startY + 1);
+                    return startY + 8;
+                }
+
                 function addText(label, value, startY) {
-                    if(!value) return startY;
-                    pdf.setFont(undefined, "bold").text(label, 15, startY);
+                    if (!value) return startY;
+                    pdf.setFontSize(10).setFont(undefined, "bold").text(label, 15, startY);
                     pdf.setFont(undefined, "normal");
                     const splitText = pdf.splitTextToSize(value, 140);
-                    pdf.text(splitText, 50, startY);
+                    pdf.text(splitText, 55, startY);
                     return startY + (splitText.length * 5) + 2;
                 }
+
+                y = addSectionTitle("1. DADOS DO SERVIÇO", y);
                 y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
+                y = addText('Ordem de Serviço:', document.getElementById('os').value, y);
                 y = addText('Técnico:', document.getElementById('tecnico').value, y);
                 y = addText('Descrição:', document.getElementById('descricao').value, y);
                 y += 5;
-                
-                // --- LÓGICA DAS FOTOS CORRIGIDA E REINTEGRADA ---
+
+                y = addSectionTitle("2. REGISTROS FOTOGRÁFICOS", y);
                 function addImageToPdf(previewId, title, x, yPos, width, height) {
                     const img = document.getElementById(previewId);
                     if (img && img.src.startsWith('data:image')) {
-                        pdf.setFont(undefined, "bold").text(title, x, yPos);
+                        pdf.setFontSize(10).setFont(undefined, "bold").text(title, x, yPos);
                         pdf.addImage(img.src, 'PNG', x, yPos + 2, width, height);
                         return true;
                     } return false;
@@ -189,48 +206,76 @@
                     y += 70;
                 }
 
-                // --- CHECKLISTS ---
-                function addCheckboxTextToPdf(title, groupId, startY) {
-                    let currentY = startY;
-                    const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`)).map(item => item.nextElementSibling.textContent.trim());
-                    if (checkedItems.length > 0) {
-                        pdf.setFontSize(10).setFont(undefined, "bold");
-                        pdf.text(title, 15, currentY);
-                        pdf.setFont(undefined, "normal");
-                        const text = checkedItems.join('; ');
-                        const splitText = pdf.splitTextToSize(text, 180);
-                        pdf.text(splitText, 15, currentY + 5);
-                        currentY += 5 + (splitText.length * 5);
+                function checkPageBreak(currentY) {
+                    if (currentY > pageHeight - 30) {
+                        pdf.addPage();
+                        return 20; // Nova posição Y na nova página
                     }
                     return currentY;
-                };
-                y = addCheckboxTextToPdf("Riscos Associados:", "#riscos-group", y);
-                y = addCheckboxTextToPdf("Equipamentos Utilizados:", "#epis-group", y);
-                y += 10;
+                }
                 
-                // --- DECLARAÇÕES ---
-                pdf.setFontSize(9).setFont(undefined, "bold");
-                pdf.text("Declarações de Ciência e Conformidade:", 15, y);
-                y += 6;
-                pdf.setFontSize(8).setFont(undefined, "normal");
-                if (document.getElementById('cienteEmergencia').checked) pdf.text("- Colaborador ciente das orientações de emergência.", 15, y);
+                y = checkPageBreak(y);
+                y = addSectionTitle("3. ANÁLISE DE RISCOS", y);
+                const riscos = Array.from(document.querySelectorAll('#riscos-group input:checked')).map(item => "• " + item.nextElementSibling.textContent.trim());
+                if(riscos.length > 0) {
+                    pdf.setFontSize(9).setFont(undefined, "normal");
+                    pdf.text(riscos.join("\n"), 15, y);
+                    y += (riscos.length * 5);
+                }
                 y += 5;
-                if (document.getElementById('confirma1').checked) pdf.text("- Colaborador afirma que a equipe possui todos os EPIs/EPCs necessários.", 15, y);
-                y += 10;
+
+                y = checkPageBreak(y);
+                y = addSectionTitle("4. EQUIPAMENTOS UTILIZADOS", y);
+                const epis = Array.from(document.querySelectorAll('#epis-group input:checked:not(#selectAllEpis)')).map(item => "• " + item.nextElementSibling.textContent.trim());
+                 if(epis.length > 0) {
+                    pdf.setFontSize(9).setFont(undefined, "normal");
+                    pdf.text(epis.join("\n"), 15, y);
+                    y += (epis.length * 5);
+                }
+                y += 5;
+
+                // --- NOVO: SEÇÃO DE DECLARAÇÕES COMPLETAS ---
+                y = checkPageBreak(y);
+                y = addSectionTitle("5. DECLARAÇÕES DE CIÊNCIA E CONFORMIDADE", y);
+
+                function addDeclaration(checkboxId, textElementId, startY) {
+                    if (document.getElementById(checkboxId).checked) {
+                        const text = document.getElementById(textElementId).textContent.trim();
+                        const splitText = pdf.splitTextToSize(text, 180);
+                        pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, 15, startY);
+                        startY += (splitText.length * 4) + 2;
+                        pdf.setFont(undefined, "bold").text("✅ CONFIRMADO PELO TÉCNICO.", 15, startY);
+                        startY += 8;
+                    }
+                    return startY;
+                }
+
+                y = addDeclaration('cienteEmergencia', 'textoEmergencia', y);
+                y = addDeclaration('confirma1', 'textoNR1', y);
                 
-                // --- ASSINATURA ---
-                pdf.setFontSize(10).setFont(undefined, "bold");
-                pdf.text("APR CONCLUÍDA E ASSINADA:", 15, y);
-                y += 5;
+                // Adiciona a confirmação do checkbox extra
+                if (document.getElementById('confirma1').checked) {
+                    const labelText = document.querySelector('label[for="confirma1"]').textContent.trim();
+                    pdf.setFontSize(9).setFont(undefined, "bold").text(`✅ ${labelText}`, 15, y);
+                    y += 8;
+                }
+
+                // --- SEÇÃO DE ASSINATURA ---
+                y = checkPageBreak(y);
+                y = addSectionTitle("6. ASSINATURA", y);
+                
                 const signatureImage = signaturePad.toDataURL();
                 pdf.addImage(signatureImage, 'PNG', 15, y, 70, 30);
                 pdf.setFontSize(9).setFont(undefined, "normal");
-                pdf.text(`Assinado por: ${document.getElementById('tecnico').value}`, 95, y + 15);
-                pdf.text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
+                pdf.text(`Assinado digitalmente por:`, 95, y + 10);
+                pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, 95, y + 15);
+                pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
 
-                pdf.save(`APR_${document.getElementById('os').value}.pdf`);
+                // --- SALVAR O ARQUIVO ---
+                const osValue = document.getElementById('os').value;
+                pdf.save(`APR_OS-${osValue}_PROTOCOLO-${protocolo}.pdf`);
             });
         });
     </script>
-</body>
+     </body>
 </html>
