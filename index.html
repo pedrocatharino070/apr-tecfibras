@@ -55,10 +55,11 @@
             
             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
             <label for="fotoLocal">Foto do Local:</label>
-            <input type="file" id="fotoLocal" accept="image/*" capture required>
+            <input type="file" id="fotoLocal" accept="image/*" required>
             <img id="previewLocal" class="image-preview" alt="Preview">
+            
             <label for="fotoEquipe">Foto da Equipe:</label>
-            <input type="file" id="fotoEquipe" accept="image/*" capture required>
+            <input type="file" id="fotoEquipe" accept="image/*" required>
             <img id="previewEquipe" class="image-preview" alt="Preview">
 
             <h2>3. ANÁLISE DE RISCOS</h2>
@@ -161,7 +162,7 @@
                         
                         if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
                             enderecoInput.value = "Erro: API do Google Maps não carregou.";
-                            alert("Não foi possível carregar a API do Google Maps. Verifique a chave de API.");
+                            alert("Não foi possível carregar a API do Google Maps. Verifique a chave de API e a sintaxe do código.");
                             return;
                         }
 
@@ -178,7 +179,7 @@
                                 }
                             } else {
                                 enderecoInput.value = "Erro ao buscar endereço: " + status;
-                                alert("A geolocalização falhou. Motivo: " + status + ". Verifique se sua chave de API é válida e se as APIs necessárias estão ativas.");
+                                alert("A geolocalização falhou. Motivo: " + status + ". Verifique se sua NOVA chave de API é válida e se as restrições estão corretas.");
                             }
                         });
                     },
