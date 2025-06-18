@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_DE_API_AQUI"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB468SRxdwsqJN8Bk9QCuCRoRh8O3BYA08></script>
     
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
@@ -159,18 +159,26 @@
                         const lat = position.coords.latitude;
                         const lon = position.coords.longitude;
                         
+                        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                            enderecoInput.value = "Erro: API do Google Maps não carregou.";
+                            alert("Não foi possível carregar a API do Google Maps. Verifique a chave de API.");
+                            return;
+                        }
+
                         const geocoder = new google.maps.Geocoder();
                         const latlng = { lat: lat, lng: lon };
                         
                         geocoder.geocode({ location: latlng }, (results, status) => {
                             if (status === "OK") {
                                 if (results[0]) {
+                                    console.log("Resultado da Geolocalização:", results[0]);
                                     enderecoInput.value = results[0].formatted_address;
                                 } else {
                                     enderecoInput.value = "Nenhum endereço encontrado.";
                                 }
                             } else {
                                 enderecoInput.value = "Erro ao buscar endereço: " + status;
+                                alert("A geolocalização falhou. Motivo: " + status + ". Verifique se sua chave de API é válida e se as APIs necessárias estão ativas.");
                             }
                         });
                     },
@@ -218,21 +226,23 @@
                 const hoje = new Date();
                 const pad = (n) => n.toString().padStart(2, '0');
                 const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
+                
                 pdf.setFontSize(9).setFont(undefined, "normal").text(`Protocolo: ${protocolo}`, pageWidth - margin, margin, { align: 'right' });
-                y = 25; // Define uma posição inicial fixa para a logo
+                y += 10;
                 
                 try {
                     const logo = document.querySelector('img[alt="Logo TecFibras"]');
                     if (logo && logo.complete && logo.naturalHeight > 0) {
-                        pdf.addImage(logo, 'JPEG', margin, y, 50, 15);
+                        const logoWidth = 60;
+                        const logoHeight = 20;
+                        pdf.addImage(logo, 'JPEG', (pageWidth - logoWidth) / 2, y, logoWidth, logoHeight);
+                        y += logoHeight + 5;
                     }
                 } catch (e) { console.error("Erro ao adicionar logo:", e); }
                 
-                // --- CORREÇÃO DEFINITIVA DA POSIÇÃO DO TÍTULO ---
-                // O Título é desenhado em uma posição Y fixa, relativa à logo, para não sobrepor
-                pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y + 8, { align: 'center' });
-                y += 25; // Move o cursor para baixo, depois da logo e do título
-                // --- FIM DA CORREÇÃO ---
+                y = checkPageBreak(y);
+                pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
+                y += 15;
                 
                 function addSectionTitle(title, startY) {
                     startY = checkPageBreak(startY, 15);
