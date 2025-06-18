@@ -20,6 +20,8 @@
         .checkbox-group div { margin-top: 8px; }
         .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
         #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
+        .preset-options { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #eee; }
+        input#coordenadas { background-color: #e9ecef; } /* Estilo para o campo de coordenadas */
     </style>
 </head>
 <body>
@@ -40,6 +42,11 @@
             <input type="text" id="os" required>
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
+            
+            <label for="coordenadas">Localização GPS:</label>
+            <input type="text" id="coordenadas" placeholder="Clique no botão para obter as coordenadas..." readonly required>
+            <button type="button" id="getLocation">Obter Localização Atual</button>
+
             <label for="descricao">Descrição do Serviço:</label>
             <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
             
@@ -54,6 +61,10 @@
             <h2>3. ANÁLISE DE RISCOS</h2>
             <div class="checkbox-group" id="riscos-group">
                 <span class="checkbox-title">(Marcar riscos identificados)</span>
+                <div class="preset-options">
+                    <div><input type="checkbox" id="selectAllRisksField"><label for="selectAllRisksField"><strong>Padrão Instalação em campo (Marcar Todos)</strong></label></div>
+                    <div><input type="checkbox" id="selectRisksCondo"><label for="selectRisksCondo"><strong>Instalação Interno Condomínio/AP</strong></label></div>
+                </div>
                 <div><input type="checkbox" class="risco-item"><label>Queda de altura acima de 2m (NR-35)</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Esforço físico</label></div>
                 <div><input type="checkbox" class="risco-item"><label>Postura inadequada</label></div>
@@ -114,10 +125,44 @@
             window.jsPDF = window.jspdf.jsPDF;
             const canvas = document.getElementById('signature-pad');
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+            
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
-            document.getElementById('selectAllEpis').addEventListener('change', function(event) {
-                document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = event.target.checked);
+            // --- LÓGICAS DE CHECKBOXES E ATALHOS ---
+            document.getElementById('selectAllEpis').addEventListener('change', (e) => {
+                document.querySelectorAll('.epi-item').forEach(c => c.checked = e.target.checked);
+            });
+            document.getElementById('selectAllRisksField').addEventListener('change', (e) => {
+                document.querySelectorAll('.risco-item').forEach(c => c.checked = e.target.checked);
+            });
+            document.getElementById('selectRisksCondo').addEventListener('change', (e) => {
+                const targets = ['Cortes e perfurações', 'Queda de objetos', 'Postura inadequada'];
+                document.querySelectorAll('.risco-item').forEach(c => {
+                    if (targets.includes(c.nextElementSibling.textContent.trim())) {
+                        c.checked = e.target.checked;
+                    }
+                });
+            });
+
+            // --- NOVA LÓGICA DE GEOLOCALIZAÇÃO ---
+            document.getElementById('getLocation').addEventListener('click', () => {
+                const coordsInput = document.getElementById('coordenadas');
+                if (navigator.geolocation) {
+                    coordsInput.value = "Obtendo...";
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            coordsInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                        },
+                        (error) => {
+                            coordsInput.value = "Erro ao obter localização.";
+                            alert(`ERRO(${error.code}): ${error.message}`);
+                        }
+                    );
+                } else {
+                    alert("Geolocalização não é suportada por este navegador.");
+                }
             });
 
             function setupImagePreview(inputId, previewId) {
@@ -126,10 +171,7 @@
                     if (file) {
                         const reader = new FileReader();
                         const preview = document.getElementById(previewId);
-                        reader.onload = e => {
-                            preview.src = e.target.result;
-                            preview.style.display = 'block';
-                        };
+                        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
                         reader.readAsDataURL(file);
                     }
                 });
@@ -137,145 +179,132 @@
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
 
+            // --- FUNÇÃO PRINCIPAL DE GERAR O PDF ---
             document.getElementById('gerarPDF').addEventListener('click', function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
-                    return alert('Preencha todos os campos obrigatórios e a assinatura.');
+                    alert('Preencha todos os campos obrigatórios e a assinatura.');
+                    return;
                 }
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
-                let y = 10; // Posição inicial Y
+                const margin = 15;
+                const bottomMargin = 20;
+                let y = margin;
 
-                // --- NOVO: PROTOCOLO NO TOPO DA PÁGINA ---
-                const hoje = new Date();
-                const pad = (n) => n.toString().padStart(2, '0');
-                const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
-                
-                pdf.setFontSize(10).setFont(undefined, "normal");
-                pdf.text(`Protocolo: ${protocolo}`, pageWidth - 15, y, { align: 'right' });
-                y += 15; // Desce a posição para o conteúdo começar abaixo
-
-                // --- CONTEÚDO PRINCIPAL ---
-                try {
-                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
-                    if (logo && logo.complete && logo.naturalHeight !== 0) pdf.addImage(logo, 'JPEG', 15, y, 60, 18);
-                } catch (e) { console.error("Erro ao adicionar logo:", e); }
-                y += 5; // Ajusta posição do título
-
-                pdf.setFontSize(16).setFont(undefined, "bold");
-                pdf.text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y + 10, { align: 'center' });
-                y += 25;
-
-                // --- SEÇÕES DO FORMULÁRIO ---
-                function addSectionTitle(title, startY) {
-                    pdf.setFontSize(12).setFont(undefined, "bold");
-                    pdf.text(title, 15, startY);
-                    pdf.line(15, startY + 1, pageWidth - 15, startY + 1);
-                    return startY + 8;
-                }
-
-                function addText(label, value, startY) {
-                    if (!value) return startY;
-                    pdf.setFontSize(10).setFont(undefined, "bold").text(label, 15, startY);
-                    pdf.setFont(undefined, "normal");
-                    const splitText = pdf.splitTextToSize(value, 140);
-                    pdf.text(splitText, 55, startY);
-                    return startY + (splitText.length * 5) + 2;
-                }
-
-                y = addSectionTitle("1. DADOS DO SERVIÇO", y);
-                y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
-                y = addText('Ordem de Serviço:', document.getElementById('os').value, y);
-                y = addText('Técnico:', document.getElementById('tecnico').value, y);
-                y = addText('Descrição:', document.getElementById('descricao').value, y);
-                y += 5;
-
-                y = addSectionTitle("2. REGISTROS FOTOGRÁFICOS", y);
-                function addImageToPdf(previewId, title, x, yPos, width, height) {
-                    const img = document.getElementById(previewId);
-                    if (img && img.src.startsWith('data:image')) {
-                        pdf.setFontSize(10).setFont(undefined, "bold").text(title, x, yPos);
-                        pdf.addImage(img.src, 'PNG', x, yPos + 2, width, height);
-                        return true;
-                    } return false;
-                };
-                let photoY = y;
-                let addedLeft = addImageToPdf('previewLocal', 'Foto do Local:', 15, photoY, 80, 60);
-                let addedRight = addImageToPdf('previewEquipe', 'Foto da Equipe:', 110, photoY, 80, 60);
-                if (addedLeft || addedRight) {
-                    y += 70;
-                }
-
-                function checkPageBreak(currentY) {
-                    if (currentY > pageHeight - 30) {
+                function checkPageBreak(currentY, neededHeight = 10) {
+                    if (currentY + neededHeight > pageHeight - bottomMargin) {
                         pdf.addPage();
-                        return 20; // Nova posição Y na nova página
+                        return margin; // Retorna a margem superior da nova página
                     }
                     return currentY;
                 }
+
+                // CABEÇALHO
+                const hoje = new Date();
+                const pad = (n) => n.toString().padStart(2, '0');
+                const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
+                pdf.setFontSize(9).setFont(undefined, "normal").text(`Protocolo: ${protocolo}`, pageWidth - margin, margin, { align: 'right' });
+                y += 10;
                 
-                y = checkPageBreak(y);
-                y = addSectionTitle("3. ANÁLISE DE RISCOS", y);
-                const riscos = Array.from(document.querySelectorAll('#riscos-group input:checked')).map(item => "• " + item.nextElementSibling.textContent.trim());
-                if(riscos.length > 0) {
-                    pdf.setFontSize(9).setFont(undefined, "normal");
-                    pdf.text(riscos.join("\n"), 15, y);
-                    y += (riscos.length * 5);
+                try {
+                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                    if (logo && logo.complete && logo.naturalHeight > 0) pdf.addImage(logo, 'JPEG', margin, y, 50, 15);
+                } catch (e) { console.error("Erro ao adicionar logo:", e); }
+                
+                pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y + 8, { align: 'center' });
+                y += 25;
+
+                // FUNÇÕES AUXILIARES PARA DESENHAR CONTEÚDO
+                function addSectionTitle(title, startY) {
+                    startY = checkPageBreak(startY, 15);
+                    pdf.setFontSize(12).setFont(undefined, "bold").text(title, margin, startY);
+                    pdf.line(margin, startY + 1, pageWidth - margin, startY + 1);
+                    return startY + 8;
                 }
-                y += 5;
-
-                y = checkPageBreak(y);
-                y = addSectionTitle("4. EQUIPAMENTOS UTILIZADOS", y);
-                const epis = Array.from(document.querySelectorAll('#epis-group input:checked:not(#selectAllEpis)')).map(item => "• " + item.nextElementSibling.textContent.trim());
-                 if(epis.length > 0) {
-                    pdf.setFontSize(9).setFont(undefined, "normal");
-                    pdf.text(epis.join("\n"), 15, y);
-                    y += (epis.length * 5);
+                function addText(label, value, startY) {
+                    startY = checkPageBreak(startY);
+                    pdf.setFontSize(10).setFont(undefined, "bold").text(label, margin, startY);
+                    const splitText = pdf.splitTextToSize(value || "-", pageWidth - margin - 45);
+                    pdf.setFont(undefined, "normal").text(splitText, margin + 40, startY);
+                    return startY + (splitText.length * 5);
                 }
-                y += 5;
-
-                // --- NOVO: SEÇÃO DE DECLARAÇÕES COMPLETAS ---
-                y = checkPageBreak(y);
-                y = addSectionTitle("5. DECLARAÇÕES DE CIÊNCIA E CONFORMIDADE", y);
-
-                function addDeclaration(checkboxId, textElementId, startY) {
-                    if (document.getElementById(checkboxId).checked) {
-                        const text = document.getElementById(textElementId).textContent.trim();
-                        const splitText = pdf.splitTextToSize(text, 180);
-                        pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, 15, startY);
-                        startY += (splitText.length * 4) + 2;
-                        pdf.setFont(undefined, "bold").text("✅ CONFIRMADO PELO TÉCNICO.", 15, startY);
-                        startY += 8;
+                function addList(items, startY) {
+                    for (const item of items) {
+                        startY = checkPageBreak(startY, 5); // Verifica espaço para a próxima linha
+                        pdf.setFontSize(9).setFont(undefined, "normal").text(`• ${item}`, margin, startY);
+                        startY += 5;
                     }
                     return startY;
                 }
 
+                // CONSTRUÇÃO DO PDF
+                y = addSectionTitle("1. DADOS DO SERVIÇO", y);
+                y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
+                y = addText('Ordem de Serviço:', document.getElementById('os').value, y);
+                y = addText('Técnico:', document.getElementById('tecnico').value, y);
+                y = addText('Coordenadas GPS:', document.getElementById('coordenadas').value, y);
+                y = addText('Descrição:', document.getElementById('descricao').value, y);
+                y += 5;
+                
+                y = addSectionTitle("2. REGISTROS FOTOGRÁFICOS", y);
+                function addImageToPdf(previewId, title, startY) {
+                    startY = checkPageBreak(startY, 55);
+                    const img = document.getElementById(previewId);
+                    if (img && img.src.startsWith('data:image')) {
+                        pdf.setFont(undefined, "bold").text(title, margin, startY);
+                        pdf.addImage(img.src, 'PNG', margin, startY + 2, 80, 50);
+                        return startY + 55;
+                    }
+                    return startY;
+                };
+                y = addImageToPdf('previewLocal', 'Foto do Local:', y);
+                y = addImageToPdf('previewEquipe', 'Foto da Equipe:', y);
+                y += 5;
+
+                y = addSectionTitle("3. ANÁLISE DE RISCOS", y);
+                const riscos = Array.from(document.querySelectorAll('#riscos-group .risco-item:checked')).map(c => c.nextElementSibling.textContent.trim());
+                y = addList(riscos, y);
+                y += 5;
+
+                y = addSectionTitle("4. EQUIPAMENTOS UTILIZADOS", y);
+                const epis = Array.from(document.querySelectorAll('#epis-group .epi-item:checked')).map(c => c.nextElementSibling.textContent.trim());
+                y = addList(epis, y);
+                y += 5;
+
+                y = addSectionTitle("5. DECLARAÇÕES DE CIÊNCIA", y);
+                function addDeclaration(checkboxId, textId, startY) {
+                    if (document.getElementById(checkboxId).checked) {
+                        const text = document.getElementById(textId).textContent.trim();
+                        const splitText = pdf.splitTextToSize(text, pageWidth - (margin * 2));
+                        startY = checkPageBreak(startY, (splitText.length * 4) + 8);
+                        pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, margin, startY);
+                        startY += (splitText.length * 4) + 2;
+                        pdf.setFont(undefined, "bold").text("✅ CONFIRMADO PELO TÉCNICO.", margin, startY);
+                        startY += 6;
+                    }
+                    return startY;
+                }
                 y = addDeclaration('cienteEmergencia', 'textoEmergencia', y);
                 y = addDeclaration('confirma1', 'textoNR1', y);
-                
-                // Adiciona a confirmação do checkbox extra
                 if (document.getElementById('confirma1').checked) {
+                    y = checkPageBreak(y);
                     const labelText = document.querySelector('label[for="confirma1"]').textContent.trim();
-                    pdf.setFontSize(9).setFont(undefined, "bold").text(`✅ ${labelText}`, 15, y);
-                    y += 8;
+                    pdf.setFontSize(9).setFont(undefined, "bold").text(`✅ ${labelText}`, margin, y);
+                    y += 6;
                 }
 
-                // --- SEÇÃO DE ASSINATURA ---
-                y = checkPageBreak(y);
                 y = addSectionTitle("6. ASSINATURA", y);
-                
+                y = checkPageBreak(y, 40);
                 const signatureImage = signaturePad.toDataURL();
-                pdf.addImage(signatureImage, 'PNG', 15, y, 70, 30);
-                pdf.setFontSize(9).setFont(undefined, "normal");
-                pdf.text(`Assinado digitalmente por:`, 95, y + 10);
-                pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, 95, y + 15);
-                pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
+                pdf.addImage(signatureImage, 'PNG', margin, y, 70, 30);
+                pdf.setFontSize(9).setFont(undefined, "normal").text(`Assinado digitalmente por:`, margin + 80, y + 10);
+                pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, margin + 80, y + 15);
+                pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, margin + 80, y + 20);
 
-                // --- SALVAR O ARQUIVO ---
-                const osValue = document.getElementById('os').value;
-                pdf.save(`APR_OS-${osValue}_PROTOCOLO-${protocolo}.pdf`);
+                pdf.save(`APR_OS-${document.getElementById('os').value}_PROTOCOLO-${protocolo}.pdf`);
             });
         });
     </script>
-     </body>
+</body>
 </html>
