@@ -1,286 +1,274 @@
 <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            window.jsPDF = window.jspdf.jsPDF;
-            const canvas = document.getElementById('signature-pad');
-            const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
-            
-            document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
-
-            // --- Funções de seleção de checkboxes (sem alteração) ---
-            document.getElementById('selectAllEpis').addEventListener('change', (e) => {
-                document.querySelectorAll('.epi-item').forEach(c => c.checked = e.target.checked);
-            });
-            document.getElementById('selectAllRisksField').addEventListener('change', (e) => {
-                document.querySelectorAll('.risco-item').forEach(c => c.checked = e.target.checked);
-            });
-            document.getElementById('selectRisksCondo').addEventListener('change', (e) => {
-                const targets = ['Cortes e perfurações', 'Queda de objetos', 'Postura inadequada'];
-                document.querySelectorAll('.risco-item').forEach(c => {
-                    if (targets.includes(c.nextElementSibling.textContent.trim())) {
-                        c.checked = e.target.checked;
-                    }
-                });
-            });
-
-            // --- Função de Geolocalização (sem alteração) ---
-            document.getElementById('getLocation').addEventListener('click', () => {
-                const enderecoInput = document.getElementById('endereco');
-                if (!navigator.geolocation) {
-                    alert("Geolocalização não é suportada por este navegador.");
-                    return;
-                }
-                
-                enderecoInput.value = "Obtendo localização...";
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-                            enderecoInput.value = "Erro: API do Google Maps não carregou.";
-                            alert("Não foi possível carregar a API do Google Maps. Verifique a chave de API e a sintaxe do código.");
-                            return;
-                        }
-
-                        const geocoder = new google.maps.Geocoder();
-                        const latlng = { lat: lat, lng: lon };
-                        
-                        geocoder.geocode({ location: latlng }, (results, status) => {
-                            if (status === "OK") {
-                                if (results[0]) {
-                                    console.log("Resultado da Geolocalização:", results[0]);
-                                    enderecoInput.value = results[0].formatted_address;
-                                } else {
-                                    enderecoInput.value = "Nenhum endereço encontrado.";
-                                }
-                            } else {
-                                enderecoInput.value = "Erro ao buscar endereço: " + status;
-                                alert("A geolocalização falhou. Motivo: " + status + ". Verifique se sua NOVA chave de API é válida e se as restrições estão corretas.");
-                            }
-                        });
-                    },
-                    (error) => {
-                        enderecoInput.value = "Não foi possível obter a localização.";
-                        alert(`ERRO(${error.code}): ${error.message}`);
-                    }
-                );
-            });
-
-            // --- Função de preview de imagem (sem alteração) ---
-            function setupImagePreview(inputId, previewId) {
-                document.getElementById(inputId).addEventListener('change', event => {
-                    const file = event.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        const preview = document.getElementById(previewId);
-                        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-            setupImagePreview('fotoLocal', 'previewLocal');
-            setupImagePreview('fotoEquipe', 'previewEquipe');
-
-            // ===================================================================
-            // INÍCIO DAS MODIFICAÇÕES PARA OTIMIZAÇÃO DO PDF
-            // ===================================================================
-
-            /**
-             * Processa uma imagem para redimensionar e comprimir antes de adicionar ao PDF.
-             * @param {string} previewId - O ID do elemento <img> que contém o preview da imagem.
-             * @param {number} maxWidth - A largura máxima desejada para a imagem em pixels.
-             * @param {number} quality - A qualidade do JPEG (de 0.0 a 1.0).
-             * @returns {Promise<string|null>} Uma promessa que resolve com a imagem otimizada em formato DataURL (JPEG).
-             */
-            function processImage(previewId, maxWidth = 800, quality = 0.7) {
-                return new Promise((resolve) => {
-                    const img = document.getElementById(previewId);
-                    if (!img || !img.src.startsWith('data:image')) {
-                        resolve(null);
-                        return;
-                    }
-
-                    const originalImage = new Image();
-                    originalImage.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        const aspectRatio = originalImage.height / originalImage.width;
-                        const newWidth = Math.min(maxWidth, originalImage.width);
-                        const newHeight = newWidth * aspectRatio;
-
-                        canvas.width = newWidth;
-                        canvas.height = newHeight;
-
-                        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
-
-                        // Converte o canvas para DataURL em formato JPEG com a qualidade especificada
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-                        resolve(compressedDataUrl);
-                    };
-                    originalImage.src = img.src;
-                });
-            }
-
-            // A função do evento 'click' agora é 'async' para aguardar o processamento das imagens.
-            document.getElementById('gerarPDF').addEventListener('click', async function() {
-                if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
-                    alert('Preencha todos os campos obrigatórios e a assinatura.');
-                    return;
-                }
-
-                // Exibe um feedback para o usuário
-                const originalButtonText = this.textContent;
-                this.textContent = 'Gerando PDF, aguarde...';
-                this.disabled = true;
-
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 15;
-                const bottomMargin = 20;
-                let y = margin;
-
-                function checkPageBreak(currentY, neededHeight = 10) {
-                    if (currentY + neededHeight > pageHeight - bottomMargin) {
-                        pdf.addPage();
-                        return margin;
-                    }
-                    return currentY;
-                }
-
-                const hoje = new Date();
-                const pad = (n) => n.toString().padStart(2, '0');
-                const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
-                
-                pdf.setFontSize(9).setFont(undefined, "normal").text(`Protocolo: ${protocolo}`, pageWidth - margin, margin, { align: 'right' });
-                y += 10;
-                
-                try {
-                    const logo = document.querySelector('img[alt="Logo TecFibras"]');
-                    if (logo && logo.complete && logo.naturalHeight > 0) {
-                        const logoWidth = 60;
-                        const logoHeight = 20;
-                        pdf.addImage(logo, 'JPEG', (pageWidth - logoWidth) / 2, y, logoWidth, logoHeight);
-                        y += logoHeight + 5;
-                    }
-                } catch (e) { console.error("Erro ao adicionar logo:", e); }
-                
-                y = checkPageBreak(y);
-                pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
-                y += 15;
-                
-                function addSectionTitle(title, startY) { /* ...código sem alteração... */ }
-                function addText(label, value, startY) { /* ...código sem alteração... */ }
-                function addList(items, startY) { /* ...código sem alteração... */ }
-                
-                // (As funções aninhadas addSectionTitle, addText e addList permanecem as mesmas do seu código original)
-                 function addSectionTitle(title, startY) {
-                    startY = checkPageBreak(startY, 15);
-                    pdf.setFontSize(12).setFont(undefined, "bold").text(title, margin, startY);
-                    pdf.line(margin, startY + 1, pageWidth - margin, startY + 1);
-                    return startY + 8;
-                }
-                function addText(label, value, startY) {
-                    startY = checkPageBreak(startY);
-                    pdf.setFontSize(10).setFont(undefined, "bold").text(label, margin, startY);
-                    const splitText = pdf.splitTextToSize(value || "-", pageWidth - margin - 45);
-                    pdf.setFont(undefined, "normal").text(splitText, margin + 40, startY);
-                    return startY + (splitText.length * 5);
-                }
-                function addList(items, startY) {
-                    for (const item of items) {
-                        startY = checkPageBreak(startY, 5);
-                        pdf.setFontSize(9).setFont(undefined, "normal").text(`• ${item}`, margin, startY);
-                        startY += 5;
-                    }
-                    return startY;
-                }
-
-                y = addSectionTitle("1. DADOS DO SERVIÇO", y);
-                y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
-                y = addText('Ordem de Serviço:', document.getElementById('os').value, y);
-                y = addText('Técnico:', document.getElementById('tecnico').value, y);
-                y = addText('Endereço:', document.getElementById('endereco').value, y);
-                y = addText('Descrição:', document.getElementById('descricao').value, y);
-                y += 5;
-                
-                y = addSectionTitle("2. REGISTROS FOTOGRÁFICOS", y);
-                
-                // NOVA FUNÇÃO OTIMIZADA PARA ADICIONAR IMAGENS
-                async function addImageToPdf(processedImage, title, startY) {
-                    startY = checkPageBreak(startY, 55);
-                    if (processedImage) {
-                        pdf.setFont(undefined, "bold").text(title, margin, startY);
-                        // Adiciona a imagem como JPEG
-                        pdf.addImage(processedImage, 'JPEG', margin, startY + 2, 80, 50);
-                        return startY + 55;
-                    }
-                    return startY;
-                };
-
-                // Processa e adiciona as imagens de forma assíncrona
-                const fotoLocalProcessada = await processImage('previewLocal');
-                y = await addImageToPdf(fotoLocalProcessada, 'Foto do Local:', y);
-
-                const fotoEquipeProcessada = await processImage('previewEquipe');
-                y = await addImageToPdf(fotoEquipeProcessada, 'Foto da Equipe:', y);
-                y += 5;
-
-                y = addSectionTitle("3. ANÁLISE DE RISCOS", y);
-                const riscos = Array.from(document.querySelectorAll('#riscos-group .risco-item:checked')).map(c => c.nextElementSibling.textContent.trim());
-                y = addList(riscos, y);
-                y += 5;
-
-                y = addSectionTitle("4. EQUIPAMENTOS UTILIZADOS", y);
-                const epis = Array.from(document.querySelectorAll('#epis-group .epi-item:checked')).map(c => c.nextElementSibling.textContent.trim());
-                y = addList(epis, y);
-                y += 5;
-
-                y = addSectionTitle("5. DECLARAÇÕES DE CIÊNCIA", y);
-                // (A função de declaração permanece a mesma)
-                 function addDeclaration(checkboxId, textId, startY) {
-                    if (document.getElementById(checkboxId).checked) {
-                        const text = document.getElementById(textId).textContent.trim();
-                        const splitText = pdf.splitTextToSize(text, pageWidth - (margin * 2));
-                        startY = checkPageBreak(startY, (splitText.length * 4) + 8);
-                        pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, margin, startY);
-                        startY += (splitText.length * 4) + 2;
-                        pdf.setFont(undefined, "bold").text("✅ CONFIRMADO PELO TÉCNICO.", margin, startY);
-                        startY += 6;
-                    }
-                    return startY;
-                }
-                y = addDeclaration('cienteEmergencia', 'textoEmergencia', y);
-                y = addDeclaration('confirma1', 'textoNR1', y);
-                if (document.getElementById('confirma1').checked) {
-                    y = checkPageBreak(y);
-                    const labelText = document.querySelector('label[for="confirma1"]').textContent.trim();
-                    pdf.setFontSize(9).setFont(undefined, "bold").text(`✅ ${labelText}`, margin, y);
-                    y += 6;
-                }
-
-                y = addSectionTitle("6. ASSINATURA", y);
-                y = checkPageBreak(y, 40);
-
-                // **OTIMIZAÇÃO DA ASSINATURA**
-                // Exporta a assinatura como JPEG comprimido em vez de PNG
-                const signatureImage = signaturePad.toDataURL('image/jpeg', 0.8);
-                
-                pdf.addImage(signatureImage, 'PNG', margin, y, 70, 30);
-                pdf.setFontSize(9).setFont(undefined, "normal").text(`Assinado digitalmente por:`, margin + 80, y + 10);
-                pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, margin + 80, y + 15);
-                pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, margin + 80, y + 20);
-
-                pdf.save(`APR_OS-${document.getElementById('os').value}_PROTOCOLO-${protocolo}.pdf`);
-
-                // Restaura o botão
-                this.textContent = originalButtonText;
-                this.disabled = false;
-            });
-
-             // ===================================================================
-            // FIM DAS MODIFICAÇÕES
-            // ===================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa bibliotecas
+        window.jsPDF = window.jspdf.jsPDF;
+        const signaturePadCanvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(signaturePadCanvas, {
+            backgroundColor: 'rgb(255, 255, 255)'
         });
-    </script>
+
+        // ===================================================================
+        // FUNÇÕES AUXILIARES GLOBAIS
+        // (Declaradas aqui para estarem disponíveis para todo o script)
+        // ===================================================================
+
+        /**
+         * Processa uma imagem para redimensionar e comprimir.
+         * @param {string} previewId - ID do elemento <img> com o preview.
+         * @param {number} maxWidth - Largura máxima em pixels.
+         * @param {number} quality - Qualidade do JPEG (0.0 a 1.0).
+         * @returns {Promise<string|null>} DataURL da imagem otimizada em JPEG.
+         */
+        function processImage(previewId, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve) => {
+                const imgElement = document.getElementById(previewId);
+                if (!imgElement || !imgElement.src.startsWith('data:image')) {
+                    resolve(null);
+                    return;
+                }
+
+                const originalImage = new Image();
+                originalImage.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    const aspectRatio = originalImage.height / originalImage.width;
+                    const newWidth = Math.min(maxWidth, originalImage.width);
+                    const newHeight = newWidth * aspectRatio;
+
+                    canvas.width = newWidth;
+                    canvas.height = newHeight;
+
+                    ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                originalImage.onerror = () => resolve(null); // Trata erro de carregamento
+                originalImage.src = imgElement.src;
+            });
+        }
+
+        /**
+         * Adiciona uma quebra de página se o conteúdo exceder o limite.
+         */
+        function checkPageBreak(pdf, currentY, pageHeight, bottomMargin, neededHeight = 10) {
+            if (currentY + neededHeight > pageHeight - bottomMargin) {
+                pdf.addPage();
+                return 15; // Retorna a margem superior da nova página
+            }
+            return currentY;
+        }
+
+        /**
+         * Adiciona um título de seção ao PDF.
+         */
+        function addSectionTitle(pdf, title, startY, pageWidth, margin) {
+            let newY = checkPageBreak(pdf, startY, pdf.internal.pageSize.getHeight(), 20, 15);
+            pdf.setFontSize(12).setFont(undefined, "bold");
+            pdf.text(title, margin, newY);
+            pdf.line(margin, newY + 1, pageWidth - margin, newY + 1);
+            return newY + 8;
+        }
+
+        /**
+         * Adiciona um par de "Rótulo: Valor" ao PDF.
+         */
+        function addText(pdf, label, value, startY, pageWidth, margin) {
+            let newY = checkPageBreak(pdf, startY, pdf.internal.pageSize.getHeight(), 20, 10);
+            pdf.setFontSize(10).setFont(undefined, "bold");
+            pdf.text(label, margin, newY);
+
+            const splitText = pdf.splitTextToSize(value || "-", pageWidth - margin - 45);
+            pdf.setFont(undefined, "normal");
+            pdf.text(splitText, margin + 40, newY);
+            return newY + (splitText.length * 5);
+        }
+        
+        // ===================================================================
+        // OUVINTES DE EVENTOS (EVENT LISTENERS)
+        // ===================================================================
+
+        // Botão para limpar assinatura
+        document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
+
+        // Checkboxes "Marcar Todos"
+        document.getElementById('selectAllEpis').addEventListener('change', (e) => {
+            document.querySelectorAll('.epi-item').forEach(c => c.checked = e.target.checked);
+        });
+        document.getElementById('selectAllRisksField').addEventListener('change', (e) => {
+            document.querySelectorAll('.risco-item').forEach(c => c.checked = e.target.checked);
+        });
+        document.getElementById('selectRisksCondo').addEventListener('change', (e) => {
+            const targets = ['Cortes e perfurações', 'Queda de objetos', 'Postura inadequada'];
+            document.querySelectorAll('.risco-item').forEach(c => {
+                if (targets.includes(c.nextElementSibling.textContent.trim())) {
+                    c.checked = e.target.checked;
+                }
+            });
+        });
+
+        // Botão para obter geolocalização
+        document.getElementById('getLocation').addEventListener('click', () => {
+            const enderecoInput = document.getElementById('endereco');
+            if (!navigator.geolocation) {
+                alert("Geolocalização não é suportada por este navegador.");
+                return;
+            }
+            enderecoInput.value = "Obtendo localização...";
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const geocoder = new google.maps.Geocoder();
+                    const latlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    geocoder.geocode({ location: latlng }, (results, status) => {
+                        if (status === "OK" && results[0]) {
+                            enderecoInput.value = results[0].formatted_address;
+                        } else {
+                            enderecoInput.value = "Erro ao buscar endereço: " + status;
+                        }
+                    });
+                },
+                (error) => {
+                    enderecoInput.value = "Não foi possível obter a localização.";
+                    alert(`ERRO(${error.code}): ${error.message}`);
+                }
+            );
+        });
+
+        // Configuração do preview das imagens
+        function setupImagePreview(inputId, previewId) {
+            document.getElementById(inputId).addEventListener('change', event => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    const preview = document.getElementById(previewId);
+                    reader.onload = e => {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        setupImagePreview('fotoLocal', 'previewLocal');
+        setupImagePreview('fotoEquipe', 'previewEquipe');
+
+        // ===================================================================
+        // FUNÇÃO PRINCIPAL PARA GERAR O PDF
+        // ===================================================================
+        document.getElementById('gerarPDF').addEventListener('click', async function() {
+            if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
+                alert('Preencha todos os campos obrigatórios e a assinatura.');
+                return;
+            }
+
+            const originalButtonText = this.textContent;
+            this.textContent = 'Gerando PDF, aguarde...';
+            this.disabled = true;
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15;
+            const bottomMargin = 20;
+            let y = margin;
+
+            // --- Cabeçalho e Logo ---
+            const hoje = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
+            pdf.setFontSize(9).text(`Protocolo: ${protocolo}`, pageWidth - margin, margin, { align: 'right' });
+            y += 10;
+            const logo = document.querySelector('img[alt="Logo TecFibras"]');
+            if (logo && logo.complete) {
+                pdf.addImage(logo, 'JPEG', (pageWidth - 60) / 2, y, 60, 20);
+                y += 25;
+            }
+            y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 15);
+            pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
+            y += 15;
+
+            // --- Seção 1: Dados do Serviço ---
+            y = addSectionTitle(pdf, "1. DADOS DO SERVIÇO", y, pageWidth, margin);
+            y = addText(pdf, 'Obra/Provedor:', document.getElementById('provedor').value, y, pageWidth, margin);
+            y = addText(pdf, 'Ordem de Serviço:', document.getElementById('os').value, y, pageWidth, margin);
+            y = addText(pdf, 'Técnico:', document.getElementById('tecnico').value, y, pageWidth, margin);
+            y = addText(pdf, 'Endereço:', document.getElementById('endereco').value, y, pageWidth, margin);
+            y = addText(pdf, 'Descrição:', document.getElementById('descricao').value, y, pageWidth, margin);
+            y += 5;
+            
+            // --- Seção 2: Registros Fotográficos (Otimizados) ---
+            y = addSectionTitle(pdf, "2. REGISTROS FOTOGRÁFICOS", y, pageWidth, margin);
+            const fotoLocalProcessada = await processImage('previewLocal');
+            if (fotoLocalProcessada) {
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 55);
+                pdf.setFont(undefined, "bold").text("Foto do Local:", margin, y);
+                pdf.addImage(fotoLocalProcessada, 'JPEG', margin, y + 2, 80, 50);
+                y += 55;
+            }
+            const fotoEquipeProcessada = await processImage('previewEquipe');
+            if (fotoEquipeProcessada) {
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 55);
+                pdf.setFont(undefined, "bold").text("Foto da Equipe:", margin, y);
+                pdf.addImage(fotoEquipeProcessada, 'JPEG', margin, y + 2, 80, 50);
+                y += 55;
+            }
+            y += 5;
+
+            // --- Seção 3: Análise de Riscos ---
+            y = addSectionTitle(pdf, "3. ANÁLISE DE RISCOS", y, pageWidth, margin);
+            const riscos = Array.from(document.querySelectorAll('#riscos-group .risco-item:checked')).map(c => c.nextElementSibling.textContent.trim());
+            for (const item of riscos) {
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 5);
+                pdf.setFontSize(9).text(`• ${item}`, margin, y);
+                y += 5;
+            }
+            y += 5;
+
+            // --- Seção 4: Equipamentos ---
+            y = addSectionTitle(pdf, "4. EQUIPAMENTOS UTILIZADOS", y, pageWidth, margin);
+            const epis = Array.from(document.querySelectorAll('#epis-group .epi-item:checked')).map(c => c.nextElementSibling.textContent.trim());
+            for (const item of epis) {
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 5);
+                pdf.setFontSize(9).text(`• ${item}`, margin, y);
+                y += 5;
+            }
+            y += 5;
+
+            // --- Seção 5: Declarações ---
+            y = addSectionTitle(pdf, "5. DECLARAÇÕES DE CIÊNCIA", y, pageWidth, margin);
+            if (document.getElementById('cienteEmergencia').checked) {
+                const texto = document.getElementById('textoEmergencia').textContent.trim();
+                const splitText = pdf.splitTextToSize(texto, pageWidth - (margin * 2));
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, (splitText.length * 4) + 8);
+                pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, margin, y);
+                y += (splitText.length * 4) + 2;
+                pdf.setFont(undefined, "bold").text("✅ CONFIRMADO PELO TÉCNICO.", margin, y);
+                y += 6;
+            }
+            if (document.getElementById('confirma1').checked) {
+                const texto = document.getElementById('textoNR1').textContent.trim();
+                const splitText = pdf.splitTextToSize(texto, pageWidth - (margin * 2));
+                y = checkPageBreak(pdf, y, pageHeight, bottomMargin, (splitText.length * 4) + 8);
+                pdf.setFontSize(9).setFont(undefined, "italic").text(splitText, margin, y);
+                y += (splitText.length * 4) + 2;
+                const labelText = document.querySelector('label[for="confirma1"]').textContent.trim();
+                pdf.setFont(undefined, "bold").text(`✅ ${labelText}`, margin, y);
+                y += 6;
+            }
+            
+            // --- Seção 6: Assinatura (Otimizada) ---
+            y = addSectionTitle(pdf, "6. ASSINATURA", y, pageWidth, margin);
+            y = checkPageBreak(pdf, y, pageHeight, bottomMargin, 40);
+            const signatureImage = signaturePad.toDataURL('image/jpeg', 0.8);
+            pdf.addImage(signatureImage, 'JPEG', margin, y, 70, 30); // CORRIGIDO PARA JPEG
+            pdf.setFontSize(9).setFont(undefined, "normal").text(`Assinado digitalmente por:`, margin + 80, y + 10);
+            pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, margin + 80, y + 15);
+            pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, margin + 80, y + 20);
+
+            // --- Salvar PDF e restaurar botão ---
+            pdf.save(`APR_OS-${document.getElementById('os').value}_PROTOCOLO-${protocolo}.pdf`);
+            this.textContent = originalButtonText;
+            this.disabled = false;
+        });
+    });
+</script>
