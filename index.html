@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -22,10 +21,9 @@
         .checkbox-group div { margin-top: 8px; }
         .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
         #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
-        input#endereco { background-color: #e9ecef; }
+        input#coordenadas { background-color: #e9ecef; }
         .photo-button-group { display: flex; gap: 10px; }
         .photo-button-group button { flex-grow: 1; width: 50%; }
-        /* Estilo para os presets de risco */
         .risk-presets { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
     </style>
 </head>
@@ -48,9 +46,9 @@
             <label for="tecnico">Técnico Responsável:</label>
             <input type="text" id="tecnico" required>
 
-            <label for="endereco">Endereço do Serviço (GPS):</label>
-            <input type="text" id="endereco" placeholder="Clique no botão para obter o endereço..." readonly required>
-            <button type="button" id="getLocation">Obter Endereço Atual</button>
+            <label for="coordenadas">Coordenadas (GPS):</label>
+            <input type="text" id="coordenadas" placeholder="Clique no botão para obter as coordenadas..." readonly required>
+            <button type="button" id="getLocation">Obter Coordenadas</button>
             
             <label for="descricao">Descrição do Serviço:</label>
             <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
@@ -129,6 +127,7 @@
                 <canvas id="signature-pad" width="300" height="150"></canvas>
             </div>
             <button type="button" id="clear-signature">Limpar</button>
+
         </form>
     </div>
     <button id="gerarPDF">Gerar APR em PDF</button>
@@ -140,45 +139,30 @@
             const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
-            // --- LÓGICA DOS CHECKBOXES DE PRESET ADICIONADA ---
+            // --- LÓGICA DOS CHECKBOXES ---
             document.getElementById('selectAllEpis').addEventListener('change', function(event) {
                 document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = event.target.checked);
             });
-            
             document.getElementById('presetAerea').addEventListener('change', function(event) {
-                // Marca ou desmarca todos os riscos
                 document.querySelectorAll('.risco-item').forEach(checkbox => checkbox.checked = event.target.checked);
             });
-
             document.getElementById('presetPredio').addEventListener('change', function(event) {
                 const isChecked = event.target.checked;
-                const predioRisks = [
-                    'Cortes e perfurações',
-                    'Queda de objetos',
-                    'Tropeçar/Escorregar',
-                    'Esforço físico'
-                ];
+                const predioRisks = ['Cortes e perfurações', 'Queda de objetos', 'Tropeçar/Escorregar', 'Esforço físico'];
                 document.querySelectorAll('.risco-item').forEach(checkbox => {
-                    const labelText = checkbox.nextElementSibling.textContent.trim();
-                    if (predioRisks.includes(labelText)) {
+                    if (predioRisks.includes(checkbox.nextElementSibling.textContent.trim())) {
                         checkbox.checked = isChecked;
                     }
                 });
             });
 
-            // Lógica dos botões de foto
+            // --- LÓGICA DOS BOTÕES DE FOTO ---
             function setupPhotoButtons(cameraBtnId, galleryBtnId, fileInputId) {
                 const cameraBtn = document.getElementById(cameraBtnId);
                 const galleryBtn = document.getElementById(galleryBtnId);
                 const fileInput = document.getElementById(fileInputId);
-                cameraBtn.addEventListener('click', () => {
-                    fileInput.setAttribute('capture', 'environment');
-                    fileInput.click();
-                });
-                galleryBtn.addEventListener('click', () => {
-                    fileInput.removeAttribute('capture');
-                    fileInput.click();
-                });
+                cameraBtn.addEventListener('click', () => { fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
+                galleryBtn.addEventListener('click', () => { fileInput.removeAttribute('capture'); fileInput.click(); });
             }
             setupPhotoButtons('fotoLocalCameraBtn', 'fotoLocalGaleriaBtn', 'fotoLocalInput');
             setupPhotoButtons('fotoEquipeCameraBtn', 'fotoEquipeGaleriaBtn', 'fotoEquipeInput');
@@ -189,10 +173,7 @@
                     if (file) {
                         const reader = new FileReader();
                         const preview = document.getElementById(previewId);
-                        reader.onload = e => {
-                            preview.src = e.target.result;
-                            preview.style.display = 'block';
-                        };
+                        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
                         reader.readAsDataURL(file);
                     }
                 });
@@ -200,45 +181,47 @@
             setupImagePreview('fotoLocalInput', 'previewLocal');
             setupImagePreview('fotoEquipeInput', 'previewEquipe');
 
-            // Lógica do GPS
+            // --- FUNÇÃO DE GPS SIMPLIFICADA E ROBUSTA ---
             document.getElementById('getLocation').addEventListener('click', () => {
-                const enderecoInput = document.getElementById('endereco');
-                const geocodePosition = (position) => {
-                    if (typeof google === 'undefined') {
-                        alert("API do Google Maps não pôde ser carregada. Verifique se a chave de API no código é válida.");
-                        enderecoInput.value = "Erro na API do Google";
-                        return;
-                    }
-                    const geocoder = new google.maps.Geocoder();
-                    geocoder.geocode({ location: { lat: position.coords.latitude, lng: position.coords.longitude } }, (results, status) => {
-                        if (status === "OK" && results[0]) enderecoInput.value = results[0].formatted_address;
-                        else enderecoInput.value = "Não foi possível encontrar o endereço.";
-                    });
+                const coordInput = document.getElementById('coordenadas');
+
+                if (!navigator.geolocation) {
+                    return alert("Geolocalização não é suportada por este navegador.");
+                }
+
+                const handleSuccess = (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    coordInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    alert("Coordenadas obtidas com sucesso!");
                 };
-                if (!navigator.geolocation) return alert("Geolocalização não é suportada.");
-                enderecoInput.value = "Obtendo localização, aguarde...";
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        if (window.google && window.google.maps) geocodePosition(position);
-                        else {
-                            const script = document.createElement('script');
-                            script.src = `https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_API_AQUI`;
-                            script.onload = () => geocodePosition(position);
-                            script.onerror = () => {
-                                alert("Falha ao carregar script do Google Maps.");
-                                enderecoInput.value = "Erro ao carregar API";
-                            };
-                            document.head.appendChild(script);
-                        }
-                    },
-                    (error) => {
-                        enderecoInput.value = "Falha ao obter localização.";
-                        alert(`Erro de Geolocalização (${error.code}): ${error.message}`);
+
+                const handleError = (error) => {
+                    let errorMessage = "Ocorreu um erro desconhecido ao obter as coordenadas.";
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = "Permissão de localização negada. Verifique as configurações do seu navegador e do celular.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = "Informação de localização indisponível. Verifique se o GPS está ativado.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = "A busca pela localização demorou demais. Tente novamente em um local com melhor sinal.";
+                            break;
                     }
-                );
+                    alert(errorMessage);
+                    coordInput.value = "Falha ao obter coordenadas.";
+                };
+
+                coordInput.value = "Obtendo coordenadas, aguarde...";
+                navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 0
+                });
             });
             
-            // Lógica de compressão de imagem
+            // --- O RESTANTE DO SCRIPT CONTINUA IGUAL ---
             function processImage(previewId, maxWidth = 800, quality = 0.7) {
                 return new Promise((resolve) => {
                     const imgElement = document.getElementById(previewId);
@@ -259,7 +242,6 @@
                 });
             }
 
-            // Lógica principal de geração do PDF
             document.getElementById('gerarPDF').addEventListener('click', async function() {
                 const form = document.getElementById('aprForm');
                 if (document.getElementById('fotoLocalInput').value === '') return alert('Por favor, adicione a "Foto do Local".');
@@ -300,14 +282,14 @@
                         if (!value) return startY;
                         pdf.setFontSize(10).setFont(undefined, "bold").text(label, margin, startY);
                         pdf.setFont(undefined, "normal");
-                        const splitText = pdf.splitTextToSize(value, pageWidth - (margin + 45)); // Largura corrigida
+                        const splitText = pdf.splitTextToSize(value, pageWidth - (margin + 45));
                         pdf.text(splitText, margin + 40, startY);
                         return startY + (splitText.length * 5) + 2;
                     }
 
                     y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
                     y = addText('Técnico:', document.getElementById('tecnico').value, y);
-                    y = addText('Endereço:', document.getElementById('endereco').value, y);
+                    y = addText('Coordenadas:', document.getElementById('coordenadas').value, y); // Campo atualizado
                     y = addText('Descrição:', document.getElementById('descricao').value, y);
                     y += 5;
                     
@@ -328,7 +310,7 @@
 
                     function addCheckboxTextToPdf(title, groupId, startY) {
                         let currentY = startY;
-                        const checkedItems = Array.from(document.querySelectorAll(`${groupId} input.risco-item:checked`)).map(item => item.nextElementSibling.textContent.trim());
+                        const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`)).map(item => item.nextElementSibling.textContent.trim());
                         if (checkedItems.length > 0) {
                             pdf.setFontSize(10).setFont(undefined, "bold").text(title, margin, currentY);
                             currentY += 5;
@@ -344,21 +326,17 @@
                     y = addCheckboxTextToPdf("Equipamentos Utilizados:", "#epis-group", y);
                     y += 10;
                     
-                    // --- SEÇÃO DE DECLARAÇÕES MODIFICADA ---
-                    pdf.setFontSize(9).setFont(undefined, "bold");
-                    pdf.text("Declarações de Ciência e Conformidade:", margin, y);
+                    pdf.setFontSize(9).setFont(undefined, "bold").text("Declarações de Ciência e Conformidade:", margin, y);
                     y += 6;
                     
-                    // Adicionando o texto de emergência completo
                     if (document.getElementById('cienteEmergencia').checked) {
                         const textoEmergencia = document.getElementById('textoEmergencia').innerText;
                         pdf.setFontSize(8).setFont(undefined, "italic");
                         const splitText = pdf.splitTextToSize(textoEmergencia, pageWidth - (margin * 2));
                         pdf.text(splitText, margin, y);
-                        y += (splitText.length * 4) + 2; // Adiciona espaço extra
+                        y += (splitText.length * 4) + 2;
                     }
 
-                    // Adicionando a confirmação de EPIs
                     if (document.getElementById('confirma1').checked) {
                         pdf.setFontSize(8).setFont(undefined, "normal");
                         pdf.text("- Colaborador afirma que a equipe possui todos os EPIs/EPCs necessários.", margin, y);
@@ -380,8 +358,8 @@
                     pdfButton.disabled = false;
                 }
             });
+
         });
     </script>
 </body>
 </html>
-```
