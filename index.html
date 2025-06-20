@@ -22,6 +22,15 @@
         .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
         #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
         input#endereco { background-color: #e9ecef; }
+        /* ESTILOS ADICIONADOS PARA OS BOTÕES DE FOTO */
+        .photo-button-group {
+            display: flex;
+            gap: 10px; /* Espaço entre os botões */
+        }
+        .photo-button-group button {
+            flex-grow: 1; /* Faz os botões ocuparem o espaço igualmente */
+            width: 50%;
+        }
     </style>
 </head>
 <body>
@@ -51,11 +60,20 @@
             <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
             
             <h2>2. REGISTROS FOTOGRÁFICOS</h2>
-            <label for="fotoLocal">Foto do Local:</label>
-            <input type="file" id="fotoLocal" accept="image/*" capture required>
+            <label>Foto do Local:</label>
+            <input type="file" id="fotoLocalInput" accept="image/*" style="display: none;" required>
+            <div class="photo-button-group">
+                <button type="button" id="fotoLocalCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoLocalGaleriaBtn">Escolher da Galeria</button>
+            </div>
             <img id="previewLocal" class="image-preview" alt="Preview">
-            <label for="fotoEquipe">Foto da Equipe:</label>
-            <input type="file" id="fotoEquipe" accept="image/*" capture required>
+
+            <label>Foto da Equipe:</label>
+            <input type="file" id="fotoEquipeInput" accept="image/*" style="display: none;" required>
+             <div class="photo-button-group">
+                <button type="button" id="fotoEquipeCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoEquipeGaleriaBtn">Escolher da Galeria</button>
+            </div>
             <img id="previewEquipe" class="image-preview" alt="Preview">
 
             <h2>3. ANÁLISE DE RISCOS</h2>
@@ -125,6 +143,27 @@
             document.getElementById('selectAllEpis').addEventListener('change', function(event) {
                 document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = event.target.checked);
             });
+            
+            // --- LÓGICA DOS BOTÕES DE FOTO ADICIONADA ---
+            function setupPhotoButtons(cameraBtnId, galleryBtnId, fileInputId) {
+                const cameraBtn = document.getElementById(cameraBtnId);
+                const galleryBtn = document.getElementById(galleryBtnId);
+                const fileInput = document.getElementById(fileInputId);
+
+                cameraBtn.addEventListener('click', () => {
+                    fileInput.setAttribute('capture', 'environment'); // Força a câmera traseira
+                    fileInput.click();
+                });
+
+                galleryBtn.addEventListener('click', () => {
+                    fileInput.removeAttribute('capture');
+                    fileInput.click();
+                });
+            }
+
+            setupPhotoButtons('fotoLocalCameraBtn', 'fotoLocalGaleriaBtn', 'fotoLocalInput');
+            setupPhotoButtons('fotoEquipeCameraBtn', 'fotoEquipeGaleriaBtn', 'fotoEquipeInput');
+
 
             function setupImagePreview(inputId, previewId) {
                 document.getElementById(inputId).addEventListener('change', event => {
@@ -140,10 +179,11 @@
                     }
                 });
             }
-            setupImagePreview('fotoLocal', 'previewLocal');
-            setupImagePreview('fotoEquipe', 'previewEquipe');
+            // Apontando para os novos IDs dos inputs
+            setupImagePreview('fotoLocalInput', 'previewLocal');
+            setupImagePreview('fotoEquipeInput', 'previewEquipe');
 
-            // --- LÓGICA DO BOTÃO DE GPS MODIFICADA PARA SER MAIS SEGURA ---
+
             document.getElementById('getLocation').addEventListener('click', () => {
                 const enderecoInput = document.getElementById('endereco');
 
@@ -171,16 +211,11 @@
                 enderecoInput.value = "Obtendo localização, aguarde...";
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        // Se o script do google já foi carregado, apenas usa
                         if (window.google && window.google.maps) {
                             geocodePosition(position);
                         } else {
-                            // Se não, carrega o script dinamicamente
                             const script = document.createElement('script');
-                            // ####################################################################
-                            // ## ATENÇÃO: SUBSTITUA 'SUA_CHAVE_API_AQUI' PELA SUA CHAVE REAL    ##
-                            // ####################################################################
-                            script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyB468SRxdwsqJN8Bk9QCuCRoRh8O3BYA08`;
+                            script.src = `https://maps.googleapis.com/maps/api/js?key=SUA_CHAVE_API_AQUI`; // LEMBRE-SE DE TROCAR A CHAVE
                             script.async = true;
                             script.defer = true;
                             script.onload = () => geocodePosition(position);
@@ -224,6 +259,13 @@
 
             document.getElementById('gerarPDF').addEventListener('click', async function() {
                 const form = document.getElementById('aprForm');
+                // Validação melhorada para fotos
+                if (document.getElementById('fotoLocalInput').value === '') {
+                    return alert('Por favor, adicione a "Foto do Local".');
+                }
+                if (document.getElementById('fotoEquipeInput').value === '') {
+                     return alert('Por favor, adicione a "Foto da Equipe".');
+                }
                 if (signaturePad.isEmpty() || !form.checkValidity()) {
                     form.reportValidity();
                     return alert('Preencha todos os campos obrigatórios e a assinatura.');
@@ -273,14 +315,14 @@
                     
                     let photoY = y;
                     let addedLeft = false;
-                    const fotoLocalProcessada = await processImage('previewLocal');
+                    const fotoLocalProcessada = await processImage('previewLocal'); // Apontando para o ID do preview
                     if (fotoLocalProcessada) {
                         pdf.setFont(undefined, "bold").text('Foto do Local:', 15, photoY);
                         pdf.addImage(fotoLocalProcessada, 'JPEG', 15, photoY + 2, 80, 60);
                         addedLeft = true;
                     }
                     
-                    const fotoEquipeProcessada = await processImage('previewEquipe');
+                    const fotoEquipeProcessada = await processImage('previewEquipe'); // Apontando para o ID do preview
                     if (fotoEquipeProcessada) {
                         pdf.setFont(undefined, "bold").text('Foto da Equipe:', 110, photoY);
                         pdf.addImage(fotoEquipeProcessada, 'JPEG', 110, photoY + 2, 80, 60);
