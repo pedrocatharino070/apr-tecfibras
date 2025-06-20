@@ -1,130 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APR - TecFibras TELECOM</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB468SRxdwsqJN8Bk9QCuCRoRh8O3BYA08"></script>
-    
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
-        .form-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; color: #343a40; }
-        label, .checkbox-title, .declaracao-texto { display: block; margin-top: 20px; font-weight: 600; color: #495057; }
-        .declaracao-texto { font-size: 14px; font-style: italic; font-weight: normal; }
-        input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: 600; }
-        #gerarPDF { width: 100%; background-color: #d93636; font-size: 18px; padding: 15px; margin-top: 30px; }
-        .image-preview { max-width: 200px; margin-top: 10px; border-radius: 6px; display: none; }
-        #signature-pad-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; }
-        .checkbox-group div { margin-top: 8px; }
-        .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
-        #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
-        .preset-options { padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #eee; }
-        input#endereco { background-color: #e9ecef; }
-    </style>
-</head>
-<body>
-
-    <div class="form-container">
-        <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300" style="display: block; margin: auto; margin-bottom: 20px;">
-        
-        <h1>Formulário de APR</h1>
-        <form id="aprForm" onsubmit="return false;">
-            <h2>1. DADOS DO SERVIÇO</h2>
-            <label for="provedor">Obra/Provedor:</label>
-            <select id="provedor" required>
-                <option value="">-- Selecione o Provedor --</option>
-                <option value="Cuiabá Fibra">Cuiabá Fibra</option>
-                <option value="Brasil TecPar">Brasil TecPar</option>
-            </select>
-            <label for="os">Ordem de Serviço (OS):</label>
-            <input type="text" id="os" required>
-            <label for="tecnico">Técnico Responsável:</label>
-            <input type="text" id="tecnico" required>
-            
-            <label for="endereco">Endereço do Serviço:</label>
-            <input type="text" id="endereco" placeholder="Clique no botão para obter o endereço..." readonly required>
-            <button type="button" id="getLocation">Obter Endereço Atual</button>
-
-            <label for="descricao">Descrição do Serviço:</label>
-            <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
-            
-            <h2>2. REGISTROS FOTOGRÁFICOS</h2>
-            <label for="fotoLocal">Foto do Local:</label>
-            <input type="file" id="fotoLocal" accept="image/*" required>
-            <img id="previewLocal" class="image-preview" alt="Preview">
-            
-            <label for="fotoEquipe">Foto da Equipe:</label>
-            <input type="file" id="fotoEquipe" accept="image/*" required>
-            <img id="previewEquipe" class="image-preview" alt="Preview">
-
-            <h2>3. ANÁLISE DE RISCOS</h2>
-            <div class="checkbox-group" id="riscos-group">
-                <span class="checkbox-title">(Marcar riscos identificados)</span>
-                <div class="preset-options">
-                    <div><input type="checkbox" id="selectAllRisksField"><label for="selectAllRisksField"><strong>Padrão Instalação em campo (Marcar Todos)</strong></label></div>
-                    <div><input type="checkbox" id="selectRisksCondo"><label for="selectRisksCondo"><strong>Instalação Interno Condomínio/AP</strong></label></div>
-                </div>
-                <div><input type="checkbox" class="risco-item"><label>Queda de altura acima de 2m (NR-35)</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Esforço físico</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Postura inadequada</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Choque elétrico (NR-10)</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Espaço confinado (NR-33)</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Atropelamento</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Insetos ou animais peçonhentos</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Tropeçar/Escorregar</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Cortes e perfurações</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Queda de objetos</label></div>
-                <div><input type="checkbox" class="risco-item"><label>Fuga de energia das partes metálicas no poste</label></div>
-            </div>
-            
-            <h2>4. EQUIPAMENTOS (CHECKLIST)</h2>
-            <div class="checkbox-group" id="epis-group">
-                <div id="selectAllContainer">
-                    <input type="checkbox" id="selectAllEpis"><label for="selectAllEpis">SELECIONAR TODOS OS ITENS</label>
-                </div>
-                <div><input type="checkbox" class="epi-item"><label>Anel de Ancoragem 1,5m</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Anel de Ancoragem 2m</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Botina de Segurança</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Calça</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Camiseta</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Caneta de Teste de Tensão 1000V</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Capacete Aba Total com Jugular</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Cinto Tipo Paraquedista 5 ou 6 Pontas</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Corda 12mm 20m</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Fita Catraca</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Fita Eureka de Ancoragem com ABS</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Freio ABS Descensor</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Luva de Vaqueta</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Mosquetão Oval</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Óculos Fumê de Proteção</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Óculos Incolor de Proteção</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Talabarte de Posicionamento</label></div>
-                <div><input type="checkbox" class="epi-item"><label>Trava Queda 12mm</label></div>
-            </div>
-
-            <h2>5. DECLARAÇÕES</h2>
-            <p id="textoEmergencia" class="declaracao-texto"><b>ORIENTAÇÕES PARA EMERGÊNCIA:</b> LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR AS TÉCNICAS DE RESGATE; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA.</p>
-            <div class="checkbox-group"><div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div></div>
-            
-            <p id="textoNR1" class="declaracao-texto" style="margin-top:15px;"><b>DECLARAÇÃO DE CONFORMIDADE NR1:</b> O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
-            <div class="checkbox-group"><div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div></div>
-
-            <h2>6. ASSINATURA</h2>
-            <label for="signature-canvas">Assine no quadro abaixo:</label>
-            <div id="signature-pad-container">
-                <canvas id="signature-pad" width="300" height="150"></canvas>
-            </div>
-            <button type="button" id="clear-signature">Limpar</button>
-        </form>
-    </div>
-    <button id="gerarPDF">Gerar APR em PDF</button>
-
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             window.jsPDF = window.jspdf.jsPDF;
             const canvas = document.getElementById('signature-pad');
@@ -132,6 +6,7 @@
             
             document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
+            // --- Funções de seleção de checkboxes (sem alteração) ---
             document.getElementById('selectAllEpis').addEventListener('change', (e) => {
                 document.querySelectorAll('.epi-item').forEach(c => c.checked = e.target.checked);
             });
@@ -147,6 +22,7 @@
                 });
             });
 
+            // --- Função de Geolocalização (sem alteração) ---
             document.getElementById('getLocation').addEventListener('click', () => {
                 const enderecoInput = document.getElementById('endereco');
                 if (!navigator.geolocation) {
@@ -190,6 +66,7 @@
                 );
             });
 
+            // --- Função de preview de imagem (sem alteração) ---
             function setupImagePreview(inputId, previewId) {
                 document.getElementById(inputId).addEventListener('change', event => {
                     const file = event.target.files[0];
@@ -204,11 +81,59 @@
             setupImagePreview('fotoLocal', 'previewLocal');
             setupImagePreview('fotoEquipe', 'previewEquipe');
 
-            document.getElementById('gerarPDF').addEventListener('click', function() {
+            // ===================================================================
+            // INÍCIO DAS MODIFICAÇÕES PARA OTIMIZAÇÃO DO PDF
+            // ===================================================================
+
+            /**
+             * Processa uma imagem para redimensionar e comprimir antes de adicionar ao PDF.
+             * @param {string} previewId - O ID do elemento <img> que contém o preview da imagem.
+             * @param {number} maxWidth - A largura máxima desejada para a imagem em pixels.
+             * @param {number} quality - A qualidade do JPEG (de 0.0 a 1.0).
+             * @returns {Promise<string|null>} Uma promessa que resolve com a imagem otimizada em formato DataURL (JPEG).
+             */
+            function processImage(previewId, maxWidth = 800, quality = 0.7) {
+                return new Promise((resolve) => {
+                    const img = document.getElementById(previewId);
+                    if (!img || !img.src.startsWith('data:image')) {
+                        resolve(null);
+                        return;
+                    }
+
+                    const originalImage = new Image();
+                    originalImage.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        const aspectRatio = originalImage.height / originalImage.width;
+                        const newWidth = Math.min(maxWidth, originalImage.width);
+                        const newHeight = newWidth * aspectRatio;
+
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+
+                        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+
+                        // Converte o canvas para DataURL em formato JPEG com a qualidade especificada
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedDataUrl);
+                    };
+                    originalImage.src = img.src;
+                });
+            }
+
+            // A função do evento 'click' agora é 'async' para aguardar o processamento das imagens.
+            document.getElementById('gerarPDF').addEventListener('click', async function() {
                 if (signaturePad.isEmpty() || !document.getElementById('aprForm').checkValidity()) {
                     alert('Preencha todos os campos obrigatórios e a assinatura.');
                     return;
                 }
+
+                // Exibe um feedback para o usuário
+                const originalButtonText = this.textContent;
+                this.textContent = 'Gerando PDF, aguarde...';
+                this.disabled = true;
+
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
@@ -245,7 +170,12 @@
                 pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
                 y += 15;
                 
-                function addSectionTitle(title, startY) {
+                function addSectionTitle(title, startY) { /* ...código sem alteração... */ }
+                function addText(label, value, startY) { /* ...código sem alteração... */ }
+                function addList(items, startY) { /* ...código sem alteração... */ }
+                
+                // (As funções aninhadas addSectionTitle, addText e addList permanecem as mesmas do seu código original)
+                 function addSectionTitle(title, startY) {
                     startY = checkPageBreak(startY, 15);
                     pdf.setFontSize(12).setFont(undefined, "bold").text(title, margin, startY);
                     pdf.line(margin, startY + 1, pageWidth - margin, startY + 1);
@@ -276,18 +206,25 @@
                 y += 5;
                 
                 y = addSectionTitle("2. REGISTROS FOTOGRÁFICOS", y);
-                function addImageToPdf(previewId, title, startY) {
+                
+                // NOVA FUNÇÃO OTIMIZADA PARA ADICIONAR IMAGENS
+                async function addImageToPdf(processedImage, title, startY) {
                     startY = checkPageBreak(startY, 55);
-                    const img = document.getElementById(previewId);
-                    if (img && img.src.startsWith('data:image')) {
+                    if (processedImage) {
                         pdf.setFont(undefined, "bold").text(title, margin, startY);
-                        pdf.addImage(img.src, 'PNG', margin, startY + 2, 80, 50);
+                        // Adiciona a imagem como JPEG
+                        pdf.addImage(processedImage, 'JPEG', margin, startY + 2, 80, 50);
                         return startY + 55;
                     }
                     return startY;
                 };
-                y = addImageToPdf('previewLocal', 'Foto do Local:', y);
-                y = addImageToPdf('previewEquipe', 'Foto da Equipe:', y);
+
+                // Processa e adiciona as imagens de forma assíncrona
+                const fotoLocalProcessada = await processImage('previewLocal');
+                y = await addImageToPdf(fotoLocalProcessada, 'Foto do Local:', y);
+
+                const fotoEquipeProcessada = await processImage('previewEquipe');
+                y = await addImageToPdf(fotoEquipeProcessada, 'Foto da Equipe:', y);
                 y += 5;
 
                 y = addSectionTitle("3. ANÁLISE DE RISCOS", y);
@@ -301,7 +238,8 @@
                 y += 5;
 
                 y = addSectionTitle("5. DECLARAÇÕES DE CIÊNCIA", y);
-                function addDeclaration(checkboxId, textId, startY) {
+                // (A função de declaração permanece a mesma)
+                 function addDeclaration(checkboxId, textId, startY) {
                     if (document.getElementById(checkboxId).checked) {
                         const text = document.getElementById(textId).textContent.trim();
                         const splitText = pdf.splitTextToSize(text, pageWidth - (margin * 2));
@@ -324,15 +262,25 @@
 
                 y = addSectionTitle("6. ASSINATURA", y);
                 y = checkPageBreak(y, 40);
-                const signatureImage = signaturePad.toDataURL();
+
+                // **OTIMIZAÇÃO DA ASSINATURA**
+                // Exporta a assinatura como JPEG comprimido em vez de PNG
+                const signatureImage = signaturePad.toDataURL('image/jpeg', 0.8);
+                
                 pdf.addImage(signatureImage, 'PNG', margin, y, 70, 30);
                 pdf.setFontSize(9).setFont(undefined, "normal").text(`Assinado digitalmente por:`, margin + 80, y + 10);
                 pdf.setFont(undefined, "bold").text(`${document.getElementById('tecnico').value}`, margin + 80, y + 15);
                 pdf.setFont(undefined, "normal").text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, margin + 80, y + 20);
 
                 pdf.save(`APR_OS-${document.getElementById('os').value}_PROTOCOLO-${protocolo}.pdf`);
+
+                // Restaura o botão
+                this.textContent = originalButtonText;
+                this.disabled = false;
             });
+
+             // ===================================================================
+            // FIM DAS MODIFICAÇÕES
+            // ===================================================================
         });
     </script>
-</body>
-</html>
