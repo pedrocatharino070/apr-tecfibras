@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprovante de Retirada - Amigo Internet</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
+        .form-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; color: #343a40; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #495057; }
+        input[type="text"], input[type="file"], textarea { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: 600; }
+        #gerarPDF { width: 100%; background-color: #28a745; font-size: 18px; padding: 15px; margin-top: 30px; }
+        .image-preview { max-width: 100%; height: auto; max-height: 250px; margin-top: 10px; border-radius: 6px; display: none; object-fit: contain; border: 1px solid #ddd; }
+        .signature-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; background-color: #fff; width: 100%; }
+        canvas { width: 100%; height: 150px; border-radius: 6px; }
+        .photo-button-group { display: flex; gap: 10px; }
+        .photo-button-group button { flex-grow: 1; width: 50%; }
+        .signatures-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .signature-box { display: flex; flex-direction: column; }
+        .signature-box button { background-color: #6c757d; }
+        
+        @media (max-width: 600px) {
+            .signatures-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <!-- Substitua o src abaixo pelo arquivo correto da logo da Amigo Internet -->
+        <img src="LOGO_AMIGO_INTERNET.jpg" alt="Logo Amigo Internet" width="250" style="display: block; margin: auto; margin-bottom: 20px;">
+        
+        <h1 style="text-align: center;">Comprovante de Retirada de Aparelho</h1>
+        
+        <form id="retiradaForm" onsubmit="return false;">
+            <h2>1. DADOS DA RETIRADA</h2>
+            
+            <label for="nomeCliente">Nome completo do Cliente:</label>
+            <input type="text" id="nomeCliente" required placeholder="Ex: João da Silva">
+            
+            <label for="protocolo">Protocolo de retirada:</label>
+            <input type="text" id="protocolo" required placeholder="Número do protocolo">
+            
+            <label for="endereco">Endereço de retirada:</label>
+            <input type="text" id="endereco" required placeholder="Rua, Número, Bairro, Cidade">
+            
+            <label for="observacao">Observação (Opcional):</label>
+            <textarea id="observacao" rows="3" placeholder="Detalhes adicionais sobre a retirada..."></textarea>
+            
+            <h2>2. REGISTROS FOTOGRÁFICOS</h2>
+            
+            <label>Foto do MAC do Aparelho:</label>
+            <input type="file" id="fotoMacInput" accept="image/*" style="display: none;" required>
+            <div class="photo-button-group">
+                <button type="button" id="fotoMacCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoMacGaleriaBtn">Escolher da Galeria</button>
+            </div>
+            <img id="previewMac" class="image-preview" alt="Preview MAC">
+
+            <label>Foto do Aparelho com a Fonte (Cima):</label>
+            <input type="file" id="fotoFonteInput" accept="image/*" style="display: none;" required>
+             <div class="photo-button-group">
+                <button type="button" id="fotoFonteCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoFonteGaleriaBtn">Escolher da Galeria</button>
+            </div>
+            <img id="previewFonte" class="image-preview" alt="Preview Aparelho e Fonte">
+
+            <h2>3. ASSINATURAS</h2>
+            
+            <div class="signatures-grid">
+                <div class="signature-box">
+                    <label>Assinatura do Técnico (Obrigatório):</label>
+                    <div class="signature-container">
+                        <canvas id="signature-pad-tecnico"></canvas>
+                    </div>
+                    <button type="button" id="clear-signature-tecnico">Limpar Assinatura Técnico</button>
+                </div>
+                
+                <div class="signature-box">
+                    <label>Assinatura do Cliente (Opcional):</label>
+                    <div class="signature-container">
+                        <canvas id="signature-pad-cliente"></canvas>
+                    </div>
+                    <button type="button" id="clear-signature-cliente">Limpar Assinatura Cliente</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+    
+    <button id="gerarPDF">Gerar Comprovante PDF</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.jsPDF = window.jspdf.jsPDF;
+            
+            // Configuração das assinaturas para ficarem responsivas
+            function resizeCanvas(canvas) {
+                const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+            }
+
+            const canvasTecnico = document.getElementById('signature-pad-tecnico');
+            const canvasCliente = document.getElementById('signature-pad-cliente');
+            
+            const padTecnico = new SignaturePad(canvasTecnico, { backgroundColor: 'rgb(255, 255, 255)' });
+            const padCliente = new SignaturePad(canvasCliente, { backgroundColor: 'rgb(255, 255, 255)' });
+
+            // Redimensionar no carregamento
+            resizeCanvas(canvasTecnico);
+            resizeCanvas(canvasCliente);
+
+            document.getElementById('clear-signature-tecnico').addEventListener('click', () => padTecnico.clear());
+            document.getElementById('clear-signature-cliente').addEventListener('click', () => padCliente.clear());
+
+            // Configuração dos botões de foto
+            function setupPhotoButtons(cameraBtnId, galleryBtnId, fileInputId) {
+                const cameraBtn = document.getElementById(cameraBtnId);
+                const galleryBtn = document.getElementById(galleryBtnId);
+                const fileInput = document.getElementById(fileInputId);
+                cameraBtn.addEventListener('click', () => { fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
+                galleryBtn.addEventListener('click', () => { fileInput.removeAttribute('capture'); fileInput.click(); });
+            }
+            setupPhotoButtons('fotoMacCameraBtn', 'fotoMacGaleriaBtn', 'fotoMacInput');
+            setupPhotoButtons('fotoFonteCameraBtn', 'fotoFonteGaleriaBtn', 'fotoFonteInput');
+
+            // Configuração do preview das imagens
+            function setupImagePreview(inputId, previewId) {
+                document.getElementById(inputId).addEventListener('change', event => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        const preview = document.getElementById(previewId);
+                        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            setupImagePreview('fotoMacInput', 'previewMac');
+            setupImagePreview('fotoFonteInput', 'previewFonte');
+
+            // Processamento de imagem para otimizar o PDF
+            function processImage(previewId, maxWidth = 600, quality = 0.7) {
+                return new Promise((resolve) => {
+                    const imgElement = document.getElementById(previewId);
+                    if (!imgElement || !imgElement.src.startsWith('data:image')) return resolve(null);
+                    const originalImage = new Image();
+                    originalImage.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const newWidth = Math.min(maxWidth, originalImage.width);
+                        const newHeight = newWidth * (originalImage.height / originalImage.width);
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    originalImage.onerror = () => resolve(null);
+                    originalImage.src = imgElement.src;
+                });
+            }
+
+            // Geração do PDF
+            document.getElementById('gerarPDF').addEventListener('click', async function() {
+                const form = document.getElementById('retiradaForm');
+                
+                // Validações
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return alert('Por favor, preencha todos os campos obrigatórios (Nome, Protocolo, Endereço).');
+                }
+                if (document.getElementById('fotoMacInput').value === '') return alert('A Foto do MAC é obrigatória.');
+                if (document.getElementById('fotoFonteInput').value === '') return alert('A Foto do Aparelho com a Fonte é obrigatória.');
+                if (padTecnico.isEmpty()) return alert('A assinatura do técnico é obrigatória.');
+
+                const pdfButton = this;
+                pdfButton.textContent = 'Gerando PDF, aguarde...';
+                pdfButton.disabled = true;
+
+                try {
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const margin = 15;
+                    let y = margin;
+
+                    const hoje = new Date();
+                    const dataFormatada = hoje.toLocaleDateString('pt-BR');
+                    const horaFormatada = hoje.toLocaleTimeString('pt-BR');
+                    
+                    // Adicionar Logo
+                    try {
+                        const logo = document.querySelector('img[alt="Logo Amigo Internet"]');
+                        if (logo && logo.complete && logo.naturalHeight !== 0) {
+                            pdf.addImage(logo, 'JPEG', margin, y, 40, 15);
+                        }
+                    } catch(e) { console.error("Erro ao adicionar logo:", e); }
+                    
+                    // Cabeçalho de Data/Hora automática
+                    pdf.setFontSize(10).setFont(undefined, "normal");
+                    pdf.text(`Data: ${dataFormatada}`, pageWidth - margin, y + 5, { align: 'right' });
+                    pdf.text(`Hora: ${horaFormatada}`, pageWidth - margin, y + 10, { align: 'right' });
+                    y += 25;
+
+                    // Título
+                    pdf.setFontSize(16).setFont(undefined, "bold");
+                    pdf.text("COMPROVANTE DE RETIRADA DE APARELHO", pageWidth / 2, y, { align: 'center' });
+                    y += 15;
+                    
+                    // Função auxiliar para inserir texto e pular linha
+                    function addText(label, value, startY) {
+                        if (!value) return startY;
+                        pdf.setFontSize(11).setFont(undefined, "bold").text(label, margin, startY);
+                        pdf.setFont(undefined, "normal");
+                        const splitText = pdf.splitTextToSize(value, pageWidth - (margin + 45));
+                        pdf.text(splitText, margin + 40, startY);
+                        return startY + (splitText.length * 6) + 2;
+                    }
+
+                    // Preenchendo dados
+                    y = addText('Cliente:', document.getElementById('nomeCliente').value, y);
+                    y = addText('Protocolo:', document.getElementById('protocolo').value, y);
+                    y = addText('Endereço:', document.getElementById('endereco').value, y);
+                    
+                    const obsValue = document.getElementById('observacao').value;
+                    if(obsValue) {
+                        y = addText('Observação:', obsValue, y);
+                    }
+                    y += 10;
+                    
+                    // Adicionando Fotos (Lado a Lado)
+                    pdf.setFontSize(11).setFont(undefined, "bold").text('Registros Fotográficos:', margin, y);
+                    y += 5;
+                    
+                    let photoHeight = 70;
+                    let photoWidth = 85;
+                    
+                    const fotoMac = await processImage('previewMac');
+                    if (fotoMac) {
+                        pdf.setFontSize(9).setFont(undefined, "normal").text('MAC do Aparelho', margin, y);
+                        pdf.addImage(fotoMac, 'JPEG', margin, y + 2, photoWidth, photoHeight);
+                    }
+                    
+                    const fotoFonte = await processImage('previewFonte');
+                    if (fotoFonte) {
+                        pdf.setFontSize(9).setFont(undefined, "normal").text('Aparelho e Fonte', margin + photoWidth + 10, y);
+                        pdf.addImage(fotoFonte, 'JPEG', margin + photoWidth + 10, y + 2, photoWidth, photoHeight);
+                    }
+
+                    y += photoHeight + 20;
+
+                    // Adicionando Assinaturas (Lado a Lado no rodapé)
+                    pdf.setFontSize(11).setFont(undefined, "bold").text("Assinaturas:", margin, y);
+                    y += 10;
+                    
+                    // Assinatura Técnico
+                    const assTecnico = padTecnico.toDataURL('image/jpeg', 1.0);
+                    pdf.addImage(assTecnico, 'JPEG', margin, y, 80, 25);
+                    pdf.line(margin, y + 25, margin + 80, y + 25); // Linha da assinatura
+                    pdf.setFontSize(9).setFont(undefined, "bold").text("Assinatura do Técnico", margin + 15, y + 30);
+                    
+                    // Assinatura Cliente (Se houver)
+                    if (!padCliente.isEmpty()) {
+                        const assCliente = padCliente.toDataURL('image/jpeg', 1.0);
+                        pdf.addImage(assCliente, 'JPEG', margin + 95, y, 80, 25);
+                    }
+                    pdf.line(margin + 95, y + 25, margin + 175, y + 25); // Linha da assinatura
+                    pdf.setFontSize(9).setFont(undefined, "bold").text("Assinatura do Cliente", margin + 115, y + 30);
+
+                    // Salvar Arquivo
+                    pdf.save(`Retirada_${document.getElementById('protocolo').value}.pdf`);
+                    
+                } catch (error) {
+                    console.error(error);
+                    alert("Ocorreu um erro ao gerar o PDF.");
+                } finally {
+                    pdfButton.textContent = 'Gerar Comprovante PDF';
+                    pdfButton.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
