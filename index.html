@@ -3,1055 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#121212">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="TecFibras">
-    <link rel="icon" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <title>TecFibras OS</title>
-
-    <link rel="manifest" href="manifest.json">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+    <title>APR - TecFibras TELECOM</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; padding: 20px; margin: 0; }
-        .container { max-width: 400px; margin: 0 auto; background: #1e1e1e; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h2 { text-align: center; color: #4dd0e1; margin-top: 0; }
-        label { font-size: 14px; margin-bottom: 5px; display: block; color: #b0bec5; }
-        input, select, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #333; background: #2c2c2c; color: white; box-sizing: border-box; font-size: 16px; }
-        input:focus, select:focus { border-color: #4dd0e1; outline: none; }
-        button { background-color: #4dd0e1; color: #000; border: none; cursor: pointer; font-weight: bold; font-size: 16px; transition: background 0.3s; }
-        button:hover { background-color: #26c6da; }
-        button:disabled { opacity: 0.6; cursor: wait; }
-        button.secundario { background: transparent; color: #b0bec5; border: 1px solid #333; font-weight: normal; margin-top: 5px; }
-        button.secundario:hover { background: #2c2c2c; }
-        .hidden { display: none !important; }
-        .materiais-box { border: 1px solid #333; padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #252525; }
-
-        .tabs { display: flex; gap: 3px; margin-bottom: 20px; }
-        .tabs button { flex: 1 1 auto; min-width: 0; margin: 0; background: #2c2c2c; color: #b0bec5; border: 1px solid #333; font-size: 11px; padding: 10px 4px; white-space: nowrap; text-align: center; }
-        .tabs button.ativa { background: #4dd0e1; color: #000; border-color: #4dd0e1; }
-
-        .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .card { background: #252525; border: 1px solid #333; border-radius: 6px; padding: 12px; text-align: center; font-size: 14px; color: #b0bec5; }
-        .card strong { display: block; font-size: 26px; color: #4dd0e1; margin-bottom: 2px; }
-
-        .saudacao-box { text-align: center; margin-bottom: 20px; position: relative; }
-        .saudacao-box h1 { margin: 0; font-size: 22px; color: #fff; }
-        .saudacao-box p { margin: 5px 0 0 0; color: #b0bec5; font-size: 14px; }
-        .engrenagem { position: absolute; top: 0; right: 0; width: auto; margin: 0; padding: 4px 8px; background: transparent; font-size: 22px; }
-        .engrenagem:hover { background: transparent; }
-        .avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 10px; border: 2px solid #4dd0e1; }
-        .avatar-vazio { display: flex; align-items: center; justify-content: center; font-size: 34px; background: #2c2c2c; }
-        .botao-foto { display: block; padding: 12px; text-align: center; background: #4dd0e1; color: #000; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
-        .dash-alert { display: flex; justify-content: space-between; background: #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; font-size: 14px; }
-        .dash-alert.critico { border-left: 4px solid #ff8a80; }
-        .dash-alert.ok { border-left: 4px solid #80cbc4; }
-        .btn-grande { padding: 16px; font-size: 18px; margin-bottom: 10px; }
-
-        .lista-modems { list-style: none; padding: 0; margin: 0 0 15px 0; max-height: 280px; overflow-y: auto; }
-        .lista-modems li { background: #252525; border: 1px solid #333; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .lista-modems li button { width: auto; margin: 0; padding: 4px 10px; font-size: 13px; }
-        .vazio { color: #b0bec5; font-size: 14px; text-align: center; padding: 10px 0; }
-        .msg-erro { color: #ff8a80; font-size: 14px; margin-bottom: 15px; }
-
-        .os-item { background:#252525; border:1px solid #333; border-radius:8px; padding:13px; margin:10px 0; cursor:pointer; }
-        .os-item:hover { border-color:#4dd0e1; }
-        .os-topo { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
-        .os-titulo { font-weight:bold; color:#fff; }
-        .os-meta { color:#b0bec5; font-size:13px; line-height:1.5; }
-        .status { display:inline-block; padding:5px 8px; border-radius:20px; font-size:11px; font-weight:bold; text-transform: uppercase; }
-        .status-pendente { background:#5d4b00; color:#ffe082; }
-        .status-aprovado { background:#0d4b2a; color:#80cbc4; }
-        .status-reprovado { background:#5b1b1b; color:#ff8a80; }
-        .os-detalhe-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-        .os-campo { background:#1e1e1e; border-radius:6px; padding:9px; }
-        .os-campo small { display:block; color:#78909c; margin-bottom:3px; }
-
-        .busca { display: flex; gap: 8px; margin-bottom: 10px; }
-        .busca input { margin-bottom: 0; }
-        .busca button { width: 52px; margin: 0; font-size: 18px; border: 1px solid #333; }
-
-        html, body { overscroll-behavior-y: contain; }
-        button { -webkit-tap-highlight-color: transparent; }
-
-        .sync-bar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:15px; font-size:12px; color:#b0bec5; }
-        .sync-bar button { width:auto; margin:0; padding:8px 12px; font-size:13px; flex:0 0 auto; }
-        #pendencias button { margin-top:0; }
-
-        @media (max-width: 420px) {
-            body { padding: 10px; }
-            .container { padding: 15px; }
-            .tabs button { font-size: 10.5px; padding: 10px 2px; }
-        }
-
-        @media print {
-            body { background:#fff; color:#000; padding:0; }
-            body * { visibility:hidden; }
-            #os-detalhe, #os-detalhe * { visibility:visible; }
-            #os-detalhe { position:absolute; left:0; top:0; width:100%; background:#fff; border:0; }
-            #os-detalhe .os-campo { background:#f5f5f5; color:#000; }
-            #os-detalhe span, h3 { color:#000 !important; }
-            #os-detalhe button { display:none; }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0 auto; max-width: 800px; padding: 20px; background-color: #f0f2f5; }
+        .form-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 10px; color: #343a40; }
+        label, .checkbox-title, .declaracao-texto { display: block; margin-top: 20px; font-weight: 600; color: #495057; }
+        .declaracao-texto { font-size: 14px; font-style: italic; font-weight: normal; }
+        input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #ced4da; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 12px 18px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: 600; }
+        #gerarPDF { width: 100%; background-color: #d93636; font-size: 18px; padding: 15px; margin-top: 30px; }
+        .image-preview { max-width: 200px; margin-top: 10px; border-radius: 6px; display: none; }
+        #signature-pad-container { border: 1px solid #ced4da; margin-top: 8px; border-radius: 6px; display: inline-block; }
+        .checkbox-group div { margin-top: 8px; }
+        .checkbox-group label { font-weight: normal; display: inline; margin-left: 8px; }
+        #selectAllContainer { font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
+        input#coordenadas { background-color: #e9ecef; }
+        .photo-button-group { display: flex; gap: 10px; }
+        .photo-button-group button { flex-grow: 1; width: 50%; }
+        .risk-presets { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;}
     </style>
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <div class="container" id="login-screen">
-        <div style="background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:18px;">
-            <img src="logo.jpg" alt="TecFibras Telecom" style="width:100%;display:block;">
-        </div>
-        <h2>Acesso Técnico</h2>
-        <input type="email" id="email" placeholder="E-mail de acesso" autocomplete="username">
-        <input type="password" id="senha" placeholder="Senha" autocomplete="current-password">
-        <button id="btn-login" onclick="fazerLogin()">Entrar no Sistema</button>
-    </div>
-
-    <!-- APP PRINCIPAL -->
-    <div class="container hidden" id="app-screen">
-
-        <div class="tabs">
-            <button id="tab-inicio" class="ativa" onclick="mostrarAba('inicio')">Início</button>
-            <button id="tab-os" onclick="mostrarAba('os')">Lançar OS</button>
-            <button id="tab-servicos" onclick="mostrarAba('servicos')">Serviços</button>
-            <button id="tab-estoque" onclick="mostrarAba('estoque')">Estoque</button>
-            <button id="tab-admin" class="hidden" onclick="mostrarAba('admin')">Admin</button>
-        </div>
-
-        <!-- ABA: INÍCIO -->
-        <div id="pane-inicio">
-            <div class="saudacao-box">
-                <button class="engrenagem" onclick="abrirPerfil()" title="Perfil">⚙️</button>
-                <img id="foto-perfil" class="avatar hidden" alt="Foto de perfil">
-                <div id="foto-perfil-vazia" class="avatar avatar-vazio">👤</div>
-                <h1 id="dash-saudacao">Bom dia!</h1>
-                <p id="dash-data"></p>
-            </div>
-
-            <div class="sync-bar">
-                <span id="sync-status">Sincronizando...</span>
-                <button id="btn-sync" class="secundario" onclick="sincronizarTudo(true)">🔄 Sincronizar</button>
-            </div>
-            <div id="pendencias" class="hidden"></div>
-
-            <h3 style="color:#4dd0e1; margin-bottom: 10px;">Produção de Hoje</h3>
-            <div class="cards">
-                <div class="card"><strong id="dash-os-hoje">0</strong>OS Lançadas</div>
-                <div class="card"><strong id="dash-aparelhos-hoje">0</strong>Aparelhos Usados</div>
-            </div>
-
-            <h3 style="color:#4dd0e1; margin-bottom: 10px;">Status do Estoque</h3>
-            <div id="dash-alerta-drop" class="dash-alert ok"><span>Cabo Drop</span> <strong id="dash-qtd-drop">0m</strong></div>
-            <div id="dash-alerta-conector" class="dash-alert ok"><span>Conectores</span> <strong id="dash-qtd-conector">0</strong></div>
-            <div id="dash-alerta-modem" class="dash-alert ok"><span>Aparelhos</span> <strong id="dash-qtd-modem">0</strong></div>
-
-            <div style="margin-top: 25px;">
-                <button class="btn-grande" onclick="mostrarAba('os')">➕ Registrar Nova OS</button>
-            </div>
-        </div>
-
-        <!-- ABA: REGISTRAR OS -->
-        <div id="pane-os" class="hidden">
-            <label>Provedor</label>
-            <select id="empresa" onchange="atualizarFormulario()">
-                <option value="">Selecione...</option>
-                <option value="Brasil Tec Par">Brasil Tec Par</option>
+    <div class="form-container">
+        <img src="LOGO TECFIBRASa.jpg" alt="Logo TecFibras" width="300" style="display: block; margin: auto; margin-bottom: 20px;">
+        
+        <h1>Formulário de APR</h1>
+        <form id="aprForm" onsubmit="return false;">
+            <h2>1. DADOS DO SERVIÇO</h2>
+            <label for="provedor">Obra/Provedor:</label>
+            <select id="provedor" required>
+                <option value="">-- Selecione o Provedor --</option>
                 <option value="Cuiabá Fibra">Cuiabá Fibra</option>
-                <option value="Vtal">Vtal</option>
+                <option value="Brasil TecPar">Brasil TecPar</option>
             </select>
+            <label for="os">Ordem de Serviço (OS):</label>
+            <input type="text" id="os" required>
+            <label for="tecnico">Técnico Responsável:</label>
+            <input type="text" id="tecnico" required>
 
-            <label>Tipo de Serviço</label>
-            <select id="servico">
-                <option value="">Selecione o provedor primeiro</option>
-            </select>
+            <label for="coordenadas">Coordenadas (GPS):</label>
+            <input type="text" id="coordenadas" placeholder="Clique no botão para obter as coordenadas..." readonly required>
+            <button type="button" id="getLocation">Obter Coordenadas</button>
+            
+            <label for="descricao">Descrição do Serviço:</label>
+            <textarea id="descricao" rows="4" placeholder="Descreva o serviço realizado..."></textarea>
+            
+            <h2>2. REGISTROS FOTOGRÁFICOS</h2>
+            <label>Foto do Local:</label>
+            <input type="file" id="fotoLocalInput" accept="image/*" style="display: none;" required>
+            <div class="photo-button-group">
+                <button type="button" id="fotoLocalCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoLocalGaleriaBtn">Escolher da Galeria</button>
+            </div>
+            <img id="previewLocal" class="image-preview" alt="Preview">
 
-            <label>Protocolo</label>
-            <input type="text" id="protocolo" placeholder="Número do protocolo">
+            <label>Foto da Equipe:</label>
+            <input type="file" id="fotoEquipeInput" accept="image/*" style="display: none;" required>
+             <div class="photo-button-group">
+                <button type="button" id="fotoEquipeCameraBtn">Abrir Câmera</button>
+                <button type="button" id="fotoEquipeGaleriaBtn">Escolher da Galeria</button>
+            </div>
+            <img id="previewEquipe" class="image-preview" alt="Preview">
 
-            <label>Nome Completo do Cliente</label>
-            <input type="text" id="cliente" placeholder="Nome e Sobrenome">
-
-            <label>Observação</label>
-            <input type="text" id="observacao" placeholder="Ex: instaladas 2 câmeras internas">
-
-            <div id="materiais-section" class="materiais-box hidden">
-                <h3 style="margin-top: 0; color: #b0bec5; font-size: 16px;">Materiais Gastos / Recolhidos</h3>
-                <label id="lbl-drop">Cabo Drop (metros)</label>
-                <input type="number" id="drop" placeholder="Ex: 50">
-                <label id="lbl-conectores">Conectores SC/APC (quantidade)</label>
-                <input type="number" id="conectores" placeholder="Ex: 2">
-
-                <label>Movimentou aparelho no estoque?</label>
-                <select id="usou_modem" onchange="toggleModem()">
-                    <option value="nao">Não</option>
-                    <option value="sim">Sim</option>
-                </select>
-
-                <div id="modem-box" class="hidden">
-                    <label>Buscar aparelho (digite últimos números)</label>
-                    <div class="busca">
-                        <input type="text" id="modem_busca" autocomplete="off" oninput="filtrarModems()">
-                        <button type="button" onclick="filtrarModems()">🔍</button>
-                    </div>
-                    <select id="modem_select"></select>
+            <h2>3. ANÁLISE DE RISCOS</h2>
+            <div class="checkbox-group" id="riscos-group">
+                <span class="checkbox-title">(Marcar riscos identificados)</span>
+                <div class="risk-presets">
+                    <div><input type="checkbox" id="presetPredio"><label for="presetPredio"><strong>Instalação em Prédio</strong></label></div>
+                    <div><input type="checkbox" id="presetAerea"><label for="presetAerea"><strong>Instalação Aérea (Marcar Todos)</strong></label></div>
                 </div>
+                <div><input type="checkbox" class="risco-item"><label>Queda de altura acima de 2m (NR-35)</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Esforço físico</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Postura inadequada</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Choque elétrico (NR-10)</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Espaço confinado (NR-33)</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Atropelamento</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Insetos ou animais peçonhentos</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Tropeçar/Escorregar</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Cortes e perfurações</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Queda de objetos</label></div>
+                <div><input type="checkbox" class="risco-item"><label>Fuga de energia das partes metálicas no poste</label></div>
             </div>
-
-            <button id="btn-salvar" onclick="salvarOS()">Finalizar OS</button>
-        </div>
-
-        <!-- ABA: MEUS SERVIÇOS -->
-        <div id="pane-servicos" class="hidden">
-            <p style="font-size:13px; color:#b0bec5; margin-top:0;">Histórico geral para sua conferência. A aprovação é feita periodicamente pela central.</p>
-            <div class="cards">
-                <div class="card"><strong id="os-pendentes">0</strong>Pendentes</div>
-                <div class="card"><strong id="os-reprovadas" style="color:#ff8a80">0</strong>Reprovadas</div>
-            </div>
-            <button class="secundario" onclick="carregarMinhasOS()">Atualizar lista</button>
-            <div id="lista-os"></div>
-            <div id="os-detalhe" class="materiais-box hidden"></div>
-        </div>
-
-        <!-- ABA: ESTOQUE -->
-        <div id="pane-estoque" class="hidden">
-            <div class="cards">
-                <div class="card"><strong id="est-drop">0</strong>metros drop</div>
-                <div class="card"><strong id="est-conector">0</strong>conectores</div>
-            </div>
-            <label>Aparelhos no carro (<span id="est-modems-qtd">0</span>)</label>
-            <ul id="lista-modems" class="lista-modems"></ul>
-            <p id="estoque-msg" class="msg-erro hidden"></p>
-            <button class="secundario" onclick="carregarEstoque()">Atualizar estoque</button>
-        </div>
-
-        <!-- ABA: ADMIN -->
-        <div id="pane-admin" class="hidden">
-            <label>Técnico a Receber Material</label>
-            <select id="adm_tecnico"></select>
-
-            <div class="materiais-box">
-                <h3 style="margin-top: 0; color: #b0bec5; font-size: 16px;">1. Transferir Insumos (Drop/Conector)</h3>
-                <input type="number" id="adm_qtd_drop" placeholder="Metros de Drop">
-                <input type="number" id="adm_qtd_conector" placeholder="Qtd. Conectores">
-                <button id="btn-enviar-insumo" onclick="admEnviarMaterial()">Enviar para Carga</button>
-            </div>
-
-            <div class="materiais-box">
-                <h3 style="margin-top: 0; color: #b0bec5; font-size: 16px;">2. Transferir Aparelhos (Em Lote)</h3>
-                <input type="text" id="adm_modelo" placeholder="Modelo (Ex: Huawei)">
-                <div class="busca">
-                    <input type="text" id="adm_serial" placeholder="Bipe aqui e aperte Enter" autocomplete="off">
-                    <button type="button" onclick="admAdicionarSerial()">+</button>
+            
+            <h2>4. EQUIPAMENTOS (CHECKLIST)</h2>
+            <div class="checkbox-group" id="epis-group">
+                <div id="selectAllContainer">
+                    <input type="checkbox" id="selectAllEpis"><label for="selectAllEpis">SELECIONAR TODOS OS ITENS</label>
                 </div>
-                <ul id="adm_pendentes" class="lista-modems"></ul>
-                <button id="adm_btn_modems" onclick="admEnviarModems()">Enviar Aparelhos</button>
+                <div><input type="checkbox" class="epi-item"><label>Anel de Ancoragem 1,5m</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Anel de Ancoragem 2m</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Botina de Segurança</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Calça</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Camiseta</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Caneta de Teste de Tensão 1000V</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Capacete Aba Total com Jugular</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Cinto Tipo Paraquedista 5 ou 6 Pontas</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Corda 12mm 20m</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Fita Catraca</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Fita Eureka de Ancoragem com ABS</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Freio ABS Descensor</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Luva de Vaqueta</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Mosquetão Oval</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Óculos Fumê de Proteção</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Óculos Incolor de Proteção</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Talabarte de Posicionamento</label></div>
+                <div><input type="checkbox" class="epi-item"><label>Trava Queda 12mm</label></div>
             </div>
-        </div>
 
-        <!-- PAINEL DA FOTO DE PERFIL -->
-        <div id="box-perfil" class="materiais-box hidden">
-            <h3 style="margin-top:0; color:#b0bec5; font-size:16px;">Foto de perfil</h3>
-            <p style="font-size:13px; color:#b0bec5; margin-top:0;">A foto fica salva só neste celular.</p>
-            <label for="input-foto" class="botao-foto">📷 Escolher foto</label>
-            <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="salvarFotoPerfil(this)">
-            <button class="secundario" onclick="removerFotoPerfil()">Remover foto</button>
-        </div>
+            <h2>5. DECLARAÇÕES</h2>
+            <p id="textoEmergencia" class="declaracao-texto"><b>ORIENTAÇÕES PARA EMERGÊNCIA:</b> LIGAR PARA: SAMU - 192, BOMBEIROS - 193, TECFIBRAS TELECOM (65) 98107-2759; APLICAR AS TÉCNICAS DE RESGATE; REALIZAR OS PRIMEIROS SOCORROS E COMUNICAR O ACIDENTE A LIDERANÇA.</p>
+            <div class="checkbox-group"><div><input type="checkbox" id="cienteEmergencia" required><label for="cienteEmergencia">Estou Ciente</label></div></div>
+            <p class="declaracao-texto" style="margin-top:15px;"><b>DECLARAÇÃO DE CONFORMIDADE NR1:</b> O trabalhador poderá interromper suas atividades quando constatar uma situação de trabalho onde, a seu ver, envolva um risco grave e iminente para a sua vida e saúde. Em caso de recusa, comunique imediatamente seu superior hierárquico.</p>
+            <div class="checkbox-group"><div><input type="checkbox" id="confirma1" required><label for="confirma1">Afirmo que toda equipe está de posse de todos os EPI/EPC necessários.</label></div></div>
 
-        <button id="btn-instalar" class="hidden" onclick="instalarApp()" style="margin-top:20px">📲 Instalar app no celular</button>
-        <button class="secundario" onclick="toggleBoxSenha()" style="margin-top:20px">🔑 Alterar minha senha</button>
-        <div id="box-senha" class="materiais-box hidden">
-            <label>Nova senha (mínimo 6 caracteres)</label>
-            <input type="password" id="nova_senha" autocomplete="new-password">
-            <label>Repita a nova senha</label>
-            <input type="password" id="nova_senha2" autocomplete="new-password">
-            <button id="btn-senha" onclick="alterarSenha()">Salvar nova senha</button>
-            <button class="secundario" onclick="toggleBoxSenha()" style="margin-bottom:0">Cancelar</button>
-        </div>
+            <h2>6. ASSINATURA</h2>
+            <label for="signature-canvas">Assine no quadro abaixo:</label>
+            <div id="signature-pad-container">
+                <canvas id="signature-pad" width="300" height="150"></canvas>
+            </div>
+            <button type="button" id="clear-signature">Limpar</button>
 
-        <button class="secundario" onclick="sair()">Sair do Sistema</button>
+        </form>
     </div>
+    <button id="gerarPDF">Gerar APR em PDF</button>
 
     <script>
-        const supabaseUrl = 'https://idniwemlettgmpsytdsn.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlkbml3ZW1sZXR0Z21wc3l0ZHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTgxNDEsImV4cCI6MjEwNzczNDE0MX0.EjDyy8A43zDTPKeo4Jd2f5Su6h9DqxpJXC8onKEwmV0';
-        const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
+        document.addEventListener('DOMContentLoaded', function() {
+            window.jsPDF = window.jspdf.jsPDF;
+            const canvas = document.getElementById('signature-pad');
+            const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+            document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
 
-        // COLOQUE AQUI A URL DO SEU APPS SCRIPT (Web App)
-        const GOOGLE_SYNC_URL = 'https://script.google.com/macros/s/AKfycbwsjjVePiJWf8R6N9vVCELytqx8wUkCXWXnRloNZ6q6mS9kb3VHNvpU010D5JfB89xO/exec';
-
-        // Envia para a planilha sem nunca travar o app
-        function syncPlanilha(payload) {
-            if (!GOOGLE_SYNC_URL || GOOGLE_SYNC_URL.startsWith('COLE_AQUI')) return;
-            try {
-                fetch(GOOGLE_SYNC_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(() => {});
-            } catch (e) {}
-        }
-
-        const servicosBrasilTecPar = ["Instalação Comum", "Instalação > 300M", "Ponto extra / Mudança de ponto interno", "Ativação de serviço agregado Câmeras", "Recolha de Equipamento"];
-        const servicosCuiabaFibra = ["Instalação Comum", "Instalação > 249M", "Manutenção Comum", "Ponto extra / Rede Mesh", "Recolha de Equipamento"];
-        const servicosVtal = ["Configuração futura"];
-
-        let usuarioId = null;
-        let usuarioEmail = "";
-        let usuarioNome = "";
-        let meusModems = [];
-        let ordensCarregadas = [];
-
-        let sincronizando = false;
-        let erroSync = null;
-
-        function ehErroDeSessao(e) {
-            const txt = [e && e.message, e && e.code, e && e.status].join(' ').toLowerCase();
-            return /jwt|pgrst301|401|not authenticated|sessao_expirada/.test(txt);
-        }
-
-        function msgErroSync(e) {
-            if (ehErroDeSessao(e)) return 'sessão expirou, saia e entre de novo';
-            return (e && (e.message || e.details)) || String(e);
-        }
-
-        function comTimeout(promessa, ms = 15000) {
-            return Promise.race([promessa, new Promise((_, rej) => setTimeout(() => rej(new Error('Tempo esgotado (internet lenta)')), ms))]);
-        }
-
-        async function garantirSessao() {
-            const { data } = await comTimeout(sb.auth.getSession());
-            const sessao = data && data.session;
-            const exp = sessao && sessao.expires_at;
-            if (!sessao || (exp && exp * 1000 - Date.now() < 60000)) {
-                const r = await comTimeout(sb.auth.refreshSession());
-                if (r.error || !r.data || !r.data.session) throw new Error('SESSAO_EXPIRADA');
-            }
-        }
-
-        function setTexto(id, valor) { const el = document.getElementById(id); if (el) el.textContent = valor; }
-
-        function lerUsados() { return lerJSON('tf_usados_' + usuarioId, []); }
-
-        function tirarModemLocal(id) {
-            const usados = lerUsados();
-            if (!usados.includes(id)) { usados.push(id); gravarJSON('tf_usados_' + usuarioId, usados); }
-            meusModems = meusModems.filter(m => m.id !== id);
-            const c = lerJSON('tf_cache_' + usuarioId, null);
-            if (c && c.modems) { c.modems = c.modems.filter(m => m.id !== id); gravarJSON('tf_cache_' + usuarioId, c); }
-        }
-
-        // ---------- Inicialização ----------
-        async function iniciarApp(user) {
-            usuarioId = user.id;
-            usuarioEmail = user.email;
-
-            verificarAdmin(user);
-
-            try {
-                const { data } = await sb.from('profiles').select('nome').eq('id', usuarioId).maybeSingle();
-                usuarioNome = (data && data.nome) ? data.nome : (nomeEmCache() || usuarioEmail.split('@')[0]);
-            } catch(e) {
-                usuarioNome = nomeEmCache() || usuarioEmail.split('@')[0];
-            }
-            gravarJSON('tf_user', { id: usuarioId, email: usuarioEmail, nome: usuarioNome });
-
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-
-            atualizarRelogioDashboard();
-            mostrarAba('inicio');
-            atualizarPendencias();
-            atualizarStatusSync();
-            sincronizarTudo(false);
-        }
-
-        async function fazerLogin() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('senha').value;
-            const btn = document.getElementById('btn-login');
-            if (!email || !password) return alert("Informe e-mail e senha.");
-
-            btn.disabled = true;
-            const { data, error } = await sb.auth.signInWithPassword({ email, password });
-            btn.disabled = false;
-
-            if (error) alert("Erro ao entrar: " + error.message);
-            else iniciarApp(data.user);
-        }
-
-        async function sair() {
-            if (lerFila().length && !confirm('Há OS aguardando envio. Elas ficam salvas neste celular e serão enviadas quando você entrar de novo com internet. Sair mesmo?')) return;
-            try { localStorage.removeItem('tf_user'); } catch(e) {}
-            try { await sb.auth.signOut(); } catch(e) {}
-            window.location.reload();
-        }
-
-        // ---------- Dashboard ----------
-        function atualizarRelogioDashboard() {
-            const agora = new Date();
-            const hora = agora.getHours();
-            let saudacao = 'Bom dia';
-            if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
-            else if (hora >= 18) saudacao = 'Boa noite';
-
-            document.getElementById('dash-saudacao').textContent = `${saudacao}, ${usuarioNome}!`;
-            document.getElementById('dash-data').textContent = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-            aplicarFotoPerfil();
-        }
-
-        async function carregarDashboard() {
-            if (!usuarioId) return;
-            const hojeInicio = new Date();
-            hojeInicio.setHours(0,0,0,0);
-
-            const { data } = await sb.from('ordens').select('id, drop, conectores, modem_id').eq('tecnico_id', usuarioId).gte('created_at', hojeInicio.toISOString());
-            const ordensHoje = data || [];
-
-            document.getElementById('dash-os-hoje').textContent = ordensHoje.length;
-            document.getElementById('dash-aparelhos-hoje').textContent = ordensHoje.filter(o => o.modem_id).length;
-        }
-
-        // ---------- Abas ----------
-        function mostrarAba(nome) {
-            ['inicio', 'os', 'servicos', 'estoque', 'admin'].forEach(aba => {
-                document.getElementById('pane-' + aba).classList.toggle('hidden', nome !== aba);
-                document.getElementById('tab-' + aba).classList.toggle('ativa', nome === aba);
+            // --- LÓGICA DOS CHECKBOXES ---
+            document.getElementById('selectAllEpis').addEventListener('change', function(event) {
+                document.querySelectorAll('.epi-item').forEach(checkbox => checkbox.checked = event.target.checked);
             });
-            if (nome === 'estoque') carregarEstoque();
-            if (nome === 'servicos') carregarMinhasOS();
-            if (nome === 'inicio') { atualizarRelogioDashboard(); carregarDashboard(); carregarEstoque(); }
-        }
+            document.getElementById('presetAerea').addEventListener('change', function(event) {
+                document.querySelectorAll('.risco-item').forEach(checkbox => checkbox.checked = event.target.checked);
+            });
+            document.getElementById('presetPredio').addEventListener('change', function(event) {
+                const isChecked = event.target.checked;
+                const predioRisks = ['Cortes e perfurações', 'Queda de objetos', 'Tropeçar/Escorregar', 'Esforço físico'];
+                document.querySelectorAll('.risco-item').forEach(checkbox => {
+                    if (predioRisks.includes(checkbox.nextElementSibling.textContent.trim())) {
+                        checkbox.checked = isChecked;
+                    }
+                });
+            });
 
-        // ---------- Estoque ----------
-        async function carregarEstoque() {
-            if (!usuarioId) return;
-            let saldoBase = null, modemsBase = null, erroBusca = null;
-            if (navigator.onLine) {
-                try {
-                    await garantirSessao();
-                    const [saldoRes, modemsRes] = await Promise.all([
-                        comTimeout(sb.from('saldo').select('material,qtd').eq('tecnico_id', usuarioId)),
-                        comTimeout(sb.from('modems').select('id,serie,modelo').eq('tecnico_id', usuarioId).eq('status', 'estoque').order('serie'))
-                    ]);
-                    if (saldoRes.error) throw new Error('saldo: ' + saldoRes.error.message);
-                    if (modemsRes.error) throw new Error('aparelhos: ' + modemsRes.error.message);
-                    saldoBase = { drop: 0, conector: 0 };
-                    (saldoRes.data || []).forEach(r => { saldoBase[r.material] = Number(r.qtd) || 0; });
-                    modemsBase = modemsRes.data || [];
-                    // Só mantém como "usado" o aparelho que o servidor ainda lista como estoque
-                    const idsServidor = modemsBase.map(m => m.id);
-                    gravarJSON('tf_usados_' + usuarioId, lerUsados().filter(id => idsServidor.includes(id)));
-                    gravarJSON('tf_cache_' + usuarioId, { saldo: saldoBase, modems: modemsBase });
-                } catch (e) { erroBusca = e; }
+            // --- LÓGICA DOS BOTÕES DE FOTO ---
+            function setupPhotoButtons(cameraBtnId, galleryBtnId, fileInputId) {
+                const cameraBtn = document.getElementById(cameraBtnId);
+                const galleryBtn = document.getElementById(galleryBtnId);
+                const fileInput = document.getElementById(fileInputId);
+                cameraBtn.addEventListener('click', () => { fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
+                galleryBtn.addEventListener('click', () => { fileInput.removeAttribute('capture'); fileInput.click(); });
             }
-            if (!saldoBase) {
-                const c = lerJSON('tf_cache_' + usuarioId, null);
-                if (c) { saldoBase = c.saldo; modemsBase = c.modems; }
-            }
-            saldoBase = saldoBase || { drop: 0, conector: 0 };
-            modemsBase = modemsBase || [];
+            setupPhotoButtons('fotoLocalCameraBtn', 'fotoLocalGaleriaBtn', 'fotoLocalInput');
+            setupPhotoButtons('fotoEquipeCameraBtn', 'fotoEquipeGaleriaBtn', 'fotoEquipeInput');
 
-            // Esconde aparelhos já usados (aqui ou na fila), mesmo que o servidor ainda os mostre
-            const usados = new Set(lerUsados());
-            const saldo = { drop: saldoBase.drop, conector: saldoBase.conector };
-            lerFila().forEach(i => { saldo.drop -= (i.drop || 0); saldo.conector -= (i.conectores || 0); if (i.modemId) usados.add(i.modemId); });
-            meusModems = modemsBase.filter(m => !usados.has(m.id));
-
-            setTexto('est-drop', saldo.drop);
-            setTexto('est-conector', saldo.conector);
-            setTexto('est-modems-qtd', meusModems.length);
-            setTexto('lbl-drop', `Cabo Drop em metros (saldo: ${saldo.drop}m)`);
-            setTexto('lbl-conectores', `Conectores SC/APC em quantidade (saldo: ${saldo.conector})`);
-            setTexto('dash-qtd-drop', `${saldo.drop}m`);
-
-            const ul = document.getElementById('lista-modems');
-            if (ul) {
-                ul.innerHTML = meusModems.length === 0 ? '<li class="vazio">Nenhum aparelho.</li>' : '';
-                meusModems.forEach(m => {
-                    ul.innerHTML += `<li>${escaparHtml(m.serie)} <span>${escaparHtml(m.modelo || '')}</span></li>`;
+            function setupImagePreview(inputId, previewId) {
+                document.getElementById(inputId).addEventListener('change', event => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        const preview = document.getElementById(previewId);
+                        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+                        reader.readAsDataURL(file);
+                    }
                 });
             }
-            filtrarModems();
+            setupImagePreview('fotoLocalInput', 'previewLocal');
+            setupImagePreview('fotoEquipeInput', 'previewEquipe');
 
-            const boxDrop = document.getElementById('dash-alerta-drop');
-            if (saldo.drop < 100) { boxDrop.className = 'dash-alert critico'; boxDrop.innerHTML = `<span>Cabo Drop (Baixo)</span> <strong>${saldo.drop}m</strong>`; }
-            else { boxDrop.className = 'dash-alert ok'; boxDrop.innerHTML = `<span>Cabo Drop</span> <strong>${saldo.drop}m</strong>`; }
+            // --- FUNÇÃO DE GPS SIMPLIFICADA E ROBUSTA ---
+            document.getElementById('getLocation').addEventListener('click', () => {
+                const coordInput = document.getElementById('coordenadas');
 
-            const boxConector = document.getElementById('dash-alerta-conector');
-            if (saldo.conector < 20) { boxConector.className = 'dash-alert critico'; boxConector.innerHTML = `<span>Conectores (Baixo)</span> <strong>${saldo.conector}</strong>`; }
-            else { boxConector.className = 'dash-alert ok'; boxConector.innerHTML = `<span>Conectores</span> <strong>${saldo.conector}</strong>`; }
-
-            const boxModem = document.getElementById('dash-alerta-modem');
-            if (meusModems.length === 0) {
-                boxModem.className = 'dash-alert critico';
-                boxModem.innerHTML = `<span>Aparelhos (Esgotado)</span> <strong>0</strong>`;
-            } else if (meusModems.length <= 2) {
-                boxModem.className = 'dash-alert critico';
-                boxModem.innerHTML = `<span>Aparelhos (Baixo)</span> <strong>${meusModems.length}</strong>`;
-            } else {
-                boxModem.className = 'dash-alert ok';
-                boxModem.innerHTML = `<span>Aparelhos</span> <strong>${meusModems.length}</strong>`;
-            }
-
-            if (erroBusca) throw erroBusca;
-        }
-
-        // ---------- Formulário de OS ----------
-        function atualizarFormulario() {
-            const empresa = document.getElementById('empresa').value;
-            const servicoSelect = document.getElementById('servico');
-            const materiaisSection = document.getElementById('materiais-section');
-            const protoInput = document.getElementById('protocolo');
-
-            servicoSelect.innerHTML = '<option value="">Selecione o serviço...</option>';
-            let opcoes = [];
-
-            if (empresa === "Brasil Tec Par") {
-                opcoes = servicosBrasilTecPar;
-                materiaisSection.classList.remove('hidden');
-                protoInput.placeholder = "Protocolo (8 dígitos)";
-            } else if (empresa === "Cuiabá Fibra") {
-                opcoes = servicosCuiabaFibra;
-                materiaisSection.classList.add('hidden');
-                protoInput.placeholder = "Protocolo (5 dígitos)";
-            } else if (empresa === "Vtal") {
-                opcoes = servicosVtal;
-                materiaisSection.classList.add('hidden');
-                protoInput.placeholder = "Número do protocolo";
-            } else {
-                materiaisSection.classList.add('hidden');
-                protoInput.placeholder = "Número do protocolo";
-            }
-
-            opcoes.forEach(serv => { servicoSelect.innerHTML += `<option value="${serv}">${serv}</option>`; });
-        }
-
-        function toggleModem() {
-            const usou = document.getElementById('usou_modem').value === 'sim';
-            document.getElementById('modem-box').classList.toggle('hidden', !usou);
-            if (usou) document.getElementById('modem_busca').focus();
-        }
-
-        function filtrarModems() {
-            const termo = document.getElementById('modem_busca').value.trim().toUpperCase();
-            const sel = document.getElementById('modem_select');
-            const lista = meusModems.filter(m => m.serie.toUpperCase().includes(termo));
-
-            const atual = sel.value;
-            sel.innerHTML = `<option value="">Selecione (${lista.length})</option>`;
-            lista.forEach(m => { sel.innerHTML += `<option value="${m.id}" data-serie="${escaparHtml(m.serie)}" data-modelo="${escaparHtml(m.modelo || '')}">${escaparHtml(m.serie)}</option>`; });
-            if (atual && lista.some(m => String(m.id) === atual)) sel.value = atual;
-            if (termo.length >= 4 && lista.length === 1) sel.value = lista[0].id;
-        }
-
-        async function salvarOS() {
-            const empresa = document.getElementById('empresa').value;
-            const servico = document.getElementById('servico').value;
-            const protocolo = document.getElementById('protocolo').value.trim();
-            const cliente = document.getElementById('cliente').value;
-            const obs = document.getElementById('observacao').value;
-
-            if (!empresa || !servico || !cliente) return alert("Preencha Provedor, Serviço e Cliente.");
-
-            if (empresa === "Brasil Tec Par" && !/^\d{8}$/.test(protocolo)) {
-                return alert("O protocolo da Brasil Tec Par deve ter exatamente 8 dígitos.");
-            }
-            if (empresa === "Cuiabá Fibra" && !/^\d{5}$/.test(protocolo)) {
-                return alert("O protocolo da Cuiabá Fibra deve ter exatamente 5 dígitos.");
-            }
-
-            let drop = 0, conectores = 0, modemId = null, modemSerie = null, modemModelo = null;
-
-            if (!document.getElementById('materiais-section').classList.contains('hidden')) {
-                drop = parseInt(document.getElementById('drop').value) || 0;
-                conectores = parseInt(document.getElementById('conectores').value) || 0;
-                if (document.getElementById('usou_modem').value === 'sim') {
-                    const selModem = document.getElementById('modem_select');
-                    modemId = parseInt(selModem.value);
-                    if (!modemId) return alert("Selecione o aparelho na lista.");
-                    modemSerie = selModem.options[selModem.selectedIndex].getAttribute('data-serie');
-                    modemModelo = selModem.options[selModem.selectedIndex].getAttribute('data-modelo');
-                }
-            }
-
-            const item = {
-                uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-                empresa, servico, protocolo, cliente, obs, drop, conectores,
-                modemId, modemSerie, modemModelo, criadoEm: new Date().toISOString()
-            };
-
-            document.getElementById('btn-salvar').disabled = true;
-
-            try {
-                if (!navigator.onLine) { enfileirarOS(item); return; }
-
-                const { data, error } = await enviarOS(item, false);
-                if (error) {
-                    if (erroDeRede(error)) { enfileirarOS(item); return; }
-                    throw error;
+                if (!navigator.geolocation) {
+                    return alert("Geolocalização não é suportada por este navegador.");
                 }
 
-                syncPlanilha(payloadPlanilha(item, data));
-                if (modemId) tirarModemLocal(modemId);
-                alert("OS Lançada com sucesso!");
-                limparFormOS();
-                mostrarAba('inicio');
-
-            } catch (err) {
-                if (erroDeRede(err) || ehErroDeSessao(err)) enfileirarOS(item, ehErroDeSessao(err) ? 'Sua sessão expirou. Saia e entre de novo para enviar.' : null);
-                else alert("Erro ao salvar: " + msgErroSync(err));
-            }
-            finally { document.getElementById('btn-salvar').disabled = false; }
-        }
-
-        // ---------- Offline: fila, cache e sincronização ----------
-        let enviandoFila = false;
-        let ultimaSync = null;
-
-        function lerJSON(chave, padrao) { try { const v = localStorage.getItem(chave); return v ? JSON.parse(v) : padrao; } catch (e) { return padrao; } }
-        function gravarJSON(chave, valor) { try { localStorage.setItem(chave, JSON.stringify(valor)); } catch (e) {} }
-        function lerFila() { return lerJSON('tf_fila_' + usuarioId, []); }
-        function lerErros() { return lerJSON('tf_erros_' + usuarioId, []); }
-        function removerDaFila(uid) { gravarJSON('tf_fila_' + usuarioId, lerFila().filter(i => i.uid !== uid)); }
-        function guardarErro(item) { const e = lerErros(); e.push(item); gravarJSON('tf_erros_' + usuarioId, e); }
-        function limparErros() { gravarJSON('tf_erros_' + usuarioId, []); atualizarPendencias(); }
-        function nomeEmCache() { const u = lerJSON('tf_user', null); return (u && u.id === usuarioId && u.nome) ? u.nome : ''; }
-
-        function erroDeRede(e) {
-            if (!navigator.onLine) return true;
-            return /failed to fetch|networkerror|network request failed|load failed|fetch|tempo esgotado/i.test(String((e && e.message) || e || ''));
-        }
-
-        async function enviarOS(item, veioDaFila) {
-            let obs = item.obs || '';
-            if (veioDaFila) {
-                const quando = new Date(item.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                obs = (obs ? obs + ' ' : '') + `[feita offline em ${quando}]`;
-            }
-            try {
-                await garantirSessao();
-                return await comTimeout(sb.rpc('registrar_ordem', {
-                    p_empresa: item.empresa, p_servico: item.servico, p_protocolo: item.protocolo,
-                    p_cliente: item.cliente, p_obs: obs, p_drop: item.drop, p_conectores: item.conectores, p_modem: item.modemId
-                }));
-            } catch (e) { return { data: null, error: e }; }
-        }
-
-        function payloadPlanilha(item, osId) {
-            return {
-                action: 'nova_os', os_id: osId, tecnico: usuarioNome,
-                empresa: item.empresa, servico: item.servico, protocolo: item.protocolo, cliente: item.cliente,
-                drop: item.drop, conectores: item.conectores, modem_serial: item.modemSerie, modem_modelo: item.modemModelo
-            };
-        }
-
-        function limparFormOS() {
-            ['protocolo','cliente','observacao','drop','conectores','modem_busca'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('usou_modem').value = 'nao'; toggleModem();
-            document.getElementById('modem_select').value = '';
-        }
-
-        function enfileirarOS(item, motivo) {
-            const fila = lerFila();
-            fila.push(item);
-            gravarJSON('tf_fila_' + usuarioId, fila);
-            alert((motivo || 'Sem conexão com a internet.') + '\nA OS foi salva no celular e será enviada automaticamente.');
-            limparFormOS();
-            mostrarAba('inicio');
-            atualizarPendencias();
-        }
-
-        async function processarFila() {
-            if (enviandoFila || !navigator.onLine || !usuarioId) return false;
-            if (!lerFila().length) return false;
-            enviandoFila = true;
-            let mudou = false;
-            try {
-                for (const item of lerFila()) {
-                    // Já foi enviada antes (resposta perdida)? Então não manda de novo.
-                    const r = await comTimeout(sb.from('ordens').select('id').eq('tecnico_id', usuarioId)
-                        .eq('empresa', item.empresa).eq('protocolo', item.protocolo)
-                        .eq('servico', item.servico).eq('cliente', item.cliente).limit(1));
-                    if (r.error && (erroDeRede(r.error) || ehErroDeSessao(r.error))) throw r.error;
-                    if (r.data && r.data.length) {
-                        // Já está no banco, mas a planilha pode não ter recebido: envia agora
-                        syncPlanilha(payloadPlanilha(item, r.data[0].id));
-                        if (item.modemId) tirarModemLocal(item.modemId);
-                        removerDaFila(item.uid); mudou = true; continue;
-                    }
-
-                    const { data, error } = await enviarOS(item, true);
-                    if (error) {
-                        // Falha de rede ou de sessão: a OS continua na fila
-                        if (erroDeRede(error) || ehErroDeSessao(error)) throw error;
-                        removerDaFila(item.uid);
-                        guardarErro({ protocolo: item.protocolo, erro: msgErroSync(error) });
-                        mudou = true;
-                        continue;
-                    }
-                    removerDaFila(item.uid);
-                    if (item.modemId) tirarModemLocal(item.modemId);
-                    syncPlanilha(payloadPlanilha(item, data));
-                    mudou = true;
-                }
-            } finally {
-                enviandoFila = false;
-                atualizarPendencias();
-            }
-            return mudou;
-        }
-
-        function atualizarPendencias() {
-            const box = document.getElementById('pendencias');
-            if (!box) return;
-            const fila = lerFila(), erros = lerErros();
-            let html = '';
-            if (fila.length) html += `<div class="dash-alert critico"><span>⏳ ${fila.length} OS aguardando internet para enviar</span></div>`;
-            erros.forEach(e => { html += `<div class="dash-alert critico" style="display:block"><b>⚠ Protocolo ${escaparHtml(e.protocolo)} não foi aceito:</b> ${escaparHtml(e.erro)}</div>`; });
-            if (erros.length) html += `<button class="secundario" onclick="limparErros()">Entendi, dispensar avisos</button>`;
-            box.innerHTML = html;
-            box.classList.toggle('hidden', !html);
-        }
-
-        function atualizarStatusSync() {
-            const el = document.getElementById('sync-status');
-            if (!el) return;
-            if (!navigator.onLine) { el.style.color = '#ffb74d'; el.textContent = '📵 Sem internet — usando dados salvos'; return; }
-            if (erroSync) { el.style.color = '#ff8a80'; el.textContent = '⚠ ' + erroSync; return; }
-            el.style.color = '';
-            el.textContent = ultimaSync
-                ? 'Atualizado às ' + ultimaSync.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                : 'Sincronizando...';
-        }
-
-        async function sincronizarTudo(manual) {
-            if (!usuarioId || sincronizando) return;
-            sincronizando = true;
-            const btn = document.getElementById('btn-sync');
-            if (manual && btn) { btn.disabled = true; btn.textContent = 'Sincronizando...'; }
-            const erros = [];
-            const passo = async (nome, fn) => {
-                try { await fn(); } catch (e) { erros.push(nome + ': ' + msgErroSync(e)); }
-            };
-            try {
-                if (!navigator.onLine) throw new Error('sem internet');
-                await garantirSessao();
-                await passo('fila', processarFila);
-                await passo('estoque', carregarEstoque);
-                await passo('painel', carregarDashboard);
-                if (!document.getElementById('pane-servicos').classList.contains('hidden')) await passo('serviços', carregarMinhasOS);
-            } catch (e) {
-                erros.push(msgErroSync(e));
-            } finally {
-                if (!erros.length) ultimaSync = new Date();
-                erroSync = erros.length ? erros.join(' | ') : null;
-                sincronizando = false;
-                if (btn) { btn.disabled = false; btn.textContent = '🔄 Sincronizar'; }
-                atualizarStatusSync();
-                atualizarPendencias();
-            }
-        }
-
-        window.addEventListener('online', () => sincronizarTudo(false));
-        window.addEventListener('offline', atualizarStatusSync);
-        document.addEventListener('visibilitychange', () => { if (!document.hidden) sincronizarTudo(false); });
-        setInterval(() => { if (!document.hidden && usuarioId) sincronizarTudo(false); }, 30000);
-
-        // ---------- Meus Serviços ----------
-        function formatarData(data) {
-            if (!data) return '-';
-            const d = new Date(data);
-            return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        }
-
-        function escaparHtml(valor) {
-            return String(valor ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-        }
-
-        function classeStatus(status) {
-            const s = String(status).toLowerCase();
-            if (s.includes('reprov')) return 'status-reprovado';
-            if (s.includes('aprov')) return 'status-aprovado';
-            return 'status-pendente';
-        }
-
-        async function carregarMinhasOS() {
-            if (!usuarioId) return;
-            const lista = document.getElementById('lista-os');
-            const { data } = await sb.from('ordens').select('*').eq('tecnico_id', usuarioId).order('created_at', { ascending: false });
-
-            const ordens = data || [];
-            ordensCarregadas = ordens;
-            document.getElementById('os-pendentes').textContent = ordens.filter(o => String(o.status).toLowerCase()==='pendente').length;
-            document.getElementById('os-reprovadas').textContent = ordens.filter(o => String(o.status).toLowerCase()==='reprovado').length;
-
-            const pend = lerFila();
-            lista.innerHTML = (ordens.length || pend.length) ? '' : '<p class="vazio">Nenhum serviço lançado.</p>';
-            pend.slice().reverse().forEach(p => {
-                lista.innerHTML += `
-                    <div class="os-item" style="cursor:default">
-                        <div class="os-topo"><div class="os-titulo">Protocolo ${escaparHtml(p.protocolo)}</div><span class="status status-pendente">Aguardando envio</span></div>
-                        <div class="os-meta">${escaparHtml(p.empresa)} - ${escaparHtml(p.cliente)}<br>Feita em: ${formatarData(p.criadoEm)}</div>
-                    </div>`;
-            });
-            ordens.forEach((o, i) => {
-                let motivoHtml = '';
-                if (String(o.status).toLowerCase() === 'reprovado' && (o.motivo_reprovacao || o.motivo)) {
-                    motivoHtml = `<div style="color:#ff8a80; font-size:13px; margin-top:6px;"><b>Motivo:</b> ${escaparHtml((o.motivo_reprovacao || o.motivo))}</div>`;
-                }
-
-                lista.innerHTML += `
-                    <div class="os-item" onclick="abrirDetalheOS(${i})">
-                        <div class="os-topo"><div class="os-titulo">OS #${o.id}</div><span class="status ${classeStatus(o.status)}">${escaparHtml(o.status)}</span></div>
-                        <div class="os-meta">${escaparHtml(o.empresa)} - ${escaparHtml(o.cliente)}<br>Lançada em: ${formatarData(o.created_at)}${motivoHtml}</div>
-                    </div>`;
-            });
-        }
-
-        window.abrirDetalheOS = function(i) {
-            const o = ordensCarregadas[i];
-            if (!o) return;
-            const box = document.getElementById('os-detalhe');
-            box.classList.remove('hidden');
-
-            let motivoDetalhe = '';
-            if (String(o.status).toLowerCase() === 'reprovado' && (o.motivo_reprovacao || o.motivo)) {
-                motivoDetalhe = `<div class="os-campo" style="grid-column: 1 / -1;"><small style="color:#ff8a80">Motivo da Reprovação</small><span style="color:#ff8a80">${escaparHtml((o.motivo_reprovacao || o.motivo))}</span></div>`;
-            }
-
-            box.innerHTML = `
-                <div class="os-topo">
-                    <h3 style="margin:0;color:#4dd0e1">OS #${o.id}</h3>
-                    <span class="status ${classeStatus(o.status)}">${escaparHtml(o.status)}</span>
-                </div>
-                <div class="os-detalhe-grid">
-                    <div class="os-campo"><small>Empresa</small><span>${escaparHtml(o.empresa)}</span></div>
-                    <div class="os-campo"><small>Serviço</small><span>${escaparHtml(o.servico)}</span></div>
-                    <div class="os-campo"><small>Protocolo</small><span>${escaparHtml(o.protocolo)}</span></div>
-                    <div class="os-campo"><small>Data / Hora</small><span>${formatarData(o.created_at)}</span></div>
-                    <div class="os-campo"><small>Cliente</small><span>${escaparHtml(o.cliente)}</span></div>
-                    <div class="os-campo"><small>Status</small><span>${escaparHtml(o.status)}</span></div>
-                    ${motivoDetalhe}
-                </div>
-                <div style="margin-top:8px" class="os-campo">
-                    <small>Observação</small>
-                    <span>${escaparHtml(o.obs || 'Nenhuma')}</span>
-                </div>
-                <button class="secundario" onclick="window.print()">Imprimir / PDF</button>
-                <button class="secundario" onclick="document.getElementById('os-detalhe').classList.add('hidden')">Fechar</button>
-            `;
-            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        // ---------- Foto de perfil (guardada neste celular) ----------
-        function abrirPerfil() {
-            const box = document.getElementById('box-perfil');
-            box.classList.toggle('hidden');
-            if (!box.classList.contains('hidden')) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function aplicarFotoPerfil() {
-            const img = document.getElementById('foto-perfil');
-            const vazia = document.getElementById('foto-perfil-vazia');
-            if (!img || !vazia) return;
-            const foto = usuarioId ? lerJSON('tf_foto_' + usuarioId, null) : null;
-            img.src = foto || '';
-            img.classList.toggle('hidden', !foto);
-            vazia.classList.toggle('hidden', !!foto);
-        }
-
-        function salvarFotoPerfil(input) {
-            const arquivo = input.files && input.files[0];
-            input.value = '';
-            if (!arquivo || !usuarioId) return;
-            if (!arquivo.type.startsWith('image/')) return alert('Escolha um arquivo de imagem.');
-            const leitor = new FileReader();
-            leitor.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const escala = Math.min(200 / img.width, 200 / img.height, 1);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.round(img.width * escala);
-                    canvas.height = Math.round(img.height * escala);
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    try {
-                        localStorage.setItem('tf_foto_' + usuarioId, JSON.stringify(canvas.toDataURL('image/jpeg', 0.8)));
-                        aplicarFotoPerfil();
-                    } catch (e) { alert('Não foi possível salvar a foto.'); }
+                const handleSuccess = (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    coordInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                    alert("Coordenadas obtidas com sucesso!");
                 };
-                img.src = leitor.result;
-            };
-            leitor.readAsDataURL(arquivo);
-        }
 
-        function removerFotoPerfil() {
-            if (!usuarioId) return;
-            localStorage.removeItem('tf_foto_' + usuarioId);
-            aplicarFotoPerfil();
-        }
+                const handleError = (error) => {
+                    let errorMessage = "Ocorreu um erro desconhecido ao obter as coordenadas.";
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = "Permissão de localização negada. Verifique as configurações do seu navegador e do celular.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = "Informação de localização indisponível. Verifique se o GPS está ativado.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = "A busca pela localização demorou demais. Tente novamente em um local com melhor sinal.";
+                            break;
+                    }
+                    alert(errorMessage);
+                    coordInput.value = "Falha ao obter coordenadas.";
+                };
 
-        // ---------- Alterar senha ----------
-        function toggleBoxSenha() {
-            const box = document.getElementById('box-senha');
-            box.classList.toggle('hidden');
-            document.getElementById('nova_senha').value = '';
-            document.getElementById('nova_senha2').value = '';
-            if (!box.classList.contains('hidden')) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        async function alterarSenha() {
-            const s1 = document.getElementById('nova_senha').value;
-            const s2 = document.getElementById('nova_senha2').value;
-            if (!navigator.onLine) return alert("Sem internet. Conecte-se para alterar a senha.");
-            if (s1.length < 6) return alert("A senha precisa ter pelo menos 6 caracteres.");
-            if (s1 !== s2) return alert("As senhas não são iguais.");
-
-            const btn = document.getElementById('btn-senha');
-            btn.disabled = true;
-            try {
-                const { error } = await sb.auth.updateUser({ password: s1 });
-                if (error) throw error;
-                alert("Senha alterada com sucesso! Use a nova senha no próximo login.");
-                toggleBoxSenha();
-            } catch (err) {
-                alert("Não foi possível alterar a senha: " + (err.message || err));
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        // ---------- Admin (somente Pedro e Izaque) ----------
-        function verificarAdmin(user) {
-            const emailUser = user.email.toLowerCase().trim();
-            const adminsAutorizados = ['pedrohenriquecatharino@gmail.com', 'izaque@tecfibras.com'];
-
-            if (adminsAutorizados.includes(emailUser)) {
-                document.getElementById('tab-admin').classList.remove('hidden');
-                carregarTecnicosAdmin();
-            }
-        }
-
-        async function carregarTecnicosAdmin() {
-            const sel = document.getElementById('adm_tecnico');
-            const { data } = await sb.from('profiles').select('id, nome, email').order('nome');
-            sel.innerHTML = '<option value="">Selecione o técnico...</option>';
-            if (data) data.forEach(t => {
-                const nome = t.nome || t.email;
-                sel.innerHTML += `<option value="${t.id}" data-nome="${escaparHtml(nome)}">${escaparHtml(nome)}</option>`;
+                coordInput.value = "Obtendo coordenadas, aguarde...";
+                navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 0
+                });
             });
-        }
-
-        async function admEnviarMaterial() {
-            const tecSel = document.getElementById('adm_tecnico');
-            const tecId = tecSel.value;
-            if (!tecId) return alert("Selecione o técnico");
-            const tecNome = tecSel.options[tecSel.selectedIndex].getAttribute('data-nome');
-
-            const drop = parseInt(document.getElementById('adm_qtd_drop').value) || 0;
-            const conector = parseInt(document.getElementById('adm_qtd_conector').value) || 0;
-
-            if (drop === 0 && conector === 0) return alert("Digite quantidades de drop ou conector.");
-
-            document.getElementById('btn-enviar-insumo').disabled = true;
-            const inserts = [];
-            if (drop !== 0) inserts.push({ tecnico_id: tecId, material: 'drop', qtd: drop });
-            if (conector !== 0) inserts.push({ tecnico_id: tecId, material: 'conector', qtd: conector });
-
-            const { error } = await sb.from('movimentos').insert(inserts);
-            document.getElementById('btn-enviar-insumo').disabled = false;
-
-            if (!error) {
-                syncPlanilha({ action: 'movimento_admin', admin: usuarioNome, tecnico: tecNome, drop: drop, conectores: conector, modems: [] });
-                alert("Insumos enviados ao carro!");
-                document.getElementById('adm_qtd_drop').value = ''; document.getElementById('adm_qtd_conector').value = '';
-            } else {
-                alert("Erro ao transferir insumos: " + error.message);
+            
+            // --- O RESTANTE DO SCRIPT CONTINUA IGUAL ---
+            function processImage(previewId, maxWidth = 800, quality = 0.7) {
+                return new Promise((resolve) => {
+                    const imgElement = document.getElementById(previewId);
+                    if (!imgElement || !imgElement.src.startsWith('data:image')) return resolve(null);
+                    const originalImage = new Image();
+                    originalImage.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const newWidth = Math.min(maxWidth, originalImage.width);
+                        const newHeight = newWidth * (originalImage.height / originalImage.width);
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        ctx.drawImage(originalImage, 0, 0, newWidth, newHeight);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    originalImage.onerror = () => resolve(null);
+                    originalImage.src = imgElement.src;
+                });
             }
-        }
 
-        let modemsPendentesAdmin = [];
-        function admAdicionarSerial() {
-            const s = document.getElementById('adm_serial').value.trim();
-            if (s) {
-                modemsPendentesAdmin.push({ serie: s, modelo: document.getElementById('adm_modelo').value.trim() });
-                document.getElementById('adm_serial').value = '';
-                atualizarListaPendentesAdmin();
-            }
-        }
+            document.getElementById('gerarPDF').addEventListener('click', async function() {
+                const form = document.getElementById('aprForm');
+                if (document.getElementById('fotoLocalInput').value === '') return alert('Por favor, adicione a "Foto do Local".');
+                if (document.getElementById('fotoEquipeInput').value === '') return alert('Por favor, adicione a "Foto da Equipe".');
+                if (signaturePad.isEmpty() || !form.checkValidity()) {
+                    form.reportValidity();
+                    return alert('Preencha todos os campos obrigatórios e a assinatura.');
+                }
 
-        function atualizarListaPendentesAdmin() {
-            const ul = document.getElementById('adm_pendentes'); ul.innerHTML = '';
-            modemsPendentesAdmin.forEach((m, i) => {
-                ul.innerHTML += `<li><span>${escaparHtml(m.serie)} ${escaparHtml(m.modelo)}</span> <button onclick="modemsPendentesAdmin.splice(${i},1); atualizarListaPendentesAdmin()">X</button></li>`;
+                const pdfButton = this;
+                pdfButton.textContent = 'Gerando PDF, aguarde...';
+                pdfButton.disabled = true;
+
+                try {
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const margin = 15;
+                    let y = margin;
+
+                    const hoje = new Date();
+                    const pad = (n) => n.toString().padStart(2, '0');
+                    const protocolo = `${hoje.getFullYear()}${pad(hoje.getMonth() + 1)}${pad(hoje.getDate())}-${pad(hoje.getHours())}${pad(hoje.getMinutes())}${pad(hoje.getSeconds())}`;
+                    
+                    try {
+                        const logo = document.querySelector('img[alt="Logo TecFibras"]');
+                        if (logo && logo.complete && logo.naturalHeight !== 0) pdf.addImage(logo, 'JPEG', margin, y, 50, 15);
+                    } catch(e) { console.error("Erro ao adicionar logo:", e); }
+                    
+                    pdf.setFontSize(8).setFont(undefined, "normal");
+                    pdf.text(`Protocolo: ${protocolo}`, pageWidth - margin, y + 5, { align: 'right' });
+                    pdf.text(`Data: ${hoje.toLocaleDateString('pt-BR')}`, pageWidth - margin, y + 10, { align: 'right' });
+                    y += 20;
+
+                    pdf.setFontSize(16).setFont(undefined, "bold").text("ANÁLISE PRELIMINAR DE RISCO (APR)", pageWidth / 2, y, { align: 'center' });
+                    y += 15;
+                    
+                    function addText(label, value, startY) {
+                        if (!value) return startY;
+                        pdf.setFontSize(10).setFont(undefined, "bold").text(label, margin, startY);
+                        pdf.setFont(undefined, "normal");
+                        const splitText = pdf.splitTextToSize(value, pageWidth - (margin + 45));
+                        pdf.text(splitText, margin + 40, startY);
+                        return startY + (splitText.length * 5) + 2;
+                    }
+
+                    y = addText('Obra/Provedor:', document.getElementById('provedor').value, y);
+                    y = addText('Técnico:', document.getElementById('tecnico').value, y);
+                    y = addText('Coordenadas:', document.getElementById('coordenadas').value, y); // Campo atualizado
+                    y = addText('Descrição:', document.getElementById('descricao').value, y);
+                    y += 5;
+                    
+                    let photoY = y;
+                    const fotoLocalProcessada = await processImage('previewLocal');
+                    if (fotoLocalProcessada) {
+                        pdf.setFont(undefined, "bold").text('Foto do Local:', margin, photoY);
+                        pdf.addImage(fotoLocalProcessada, 'JPEG', margin, photoY + 2, 80, 60);
+                    }
+                    
+                    const fotoEquipeProcessada = await processImage('previewEquipe');
+                    if (fotoEquipeProcessada) {
+                        pdf.setFont(undefined, "bold").text('Foto da Equipe:', 110, photoY);
+                        pdf.addImage(fotoEquipeProcessada, 'JPEG', 110, photoY + 2, 80, 60);
+                    }
+
+                    if (fotoLocalProcessada || fotoEquipeProcessada) y += 70;
+
+                    function addCheckboxTextToPdf(title, groupId, startY) {
+                        let currentY = startY;
+                        const checkedItems = Array.from(document.querySelectorAll(`${groupId} input:checked`)).map(item => item.nextElementSibling.textContent.trim());
+                        if (checkedItems.length > 0) {
+                            pdf.setFontSize(10).setFont(undefined, "bold").text(title, margin, currentY);
+                            currentY += 5;
+                            pdf.setFont(undefined, "normal");
+                            const text = checkedItems.join('; ');
+                            const splitText = pdf.splitTextToSize(text, pageWidth - (margin * 2));
+                            pdf.text(splitText, margin, currentY);
+                            currentY += (splitText.length * 5);
+                        }
+                        return currentY;
+                    };
+                    y = addCheckboxTextToPdf("Riscos Associados:", "#riscos-group", y);
+                    y = addCheckboxTextToPdf("Equipamentos Utilizados:", "#epis-group", y);
+                    y += 10;
+                    
+                    pdf.setFontSize(9).setFont(undefined, "bold").text("Declarações de Ciência e Conformidade:", margin, y);
+                    y += 6;
+                    
+                    if (document.getElementById('cienteEmergencia').checked) {
+                        const textoEmergencia = document.getElementById('textoEmergencia').innerText;
+                        pdf.setFontSize(8).setFont(undefined, "italic");
+                        const splitText = pdf.splitTextToSize(textoEmergencia, pageWidth - (margin * 2));
+                        pdf.text(splitText, margin, y);
+                        y += (splitText.length * 4) + 2;
+                    }
+
+                    if (document.getElementById('confirma1').checked) {
+                        pdf.setFontSize(8).setFont(undefined, "normal");
+                        pdf.text("- Colaborador afirma que a equipe possui todos os EPIs/EPCs necessários.", margin, y);
+                        y += 5;
+                    }
+                    y += 5;
+                    
+                    pdf.setFontSize(10).setFont(undefined, "bold").text("APR CONCLUÍDA E ASSINADA:", margin, y);
+                    y += 5;
+                    const signatureImage = signaturePad.toDataURL('image/jpeg', 0.8);
+                    pdf.addImage(signatureImage, 'JPEG', margin, y, 70, 30);
+                    pdf.setFontSize(9).setFont(undefined, "normal");
+                    pdf.text(`Assinado por: ${document.getElementById('tecnico').value}`, 95, y + 15);
+                    pdf.text(`Data e Hora: ${hoje.toLocaleString('pt-BR')}`, 95, y + 20);
+
+                    pdf.save(`APR_${document.getElementById('os').value}.pdf`);
+                } finally {
+                    pdfButton.textContent = 'Gerar APR em PDF';
+                    pdfButton.disabled = false;
+                }
             });
-        }
 
-        document.getElementById('adm_serial').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); admAdicionarSerial(); } });
-
-        async function admEnviarModems() {
-            const tecSel = document.getElementById('adm_tecnico');
-            if (!tecSel.value) return alert("Selecione o técnico.");
-            if (modemsPendentesAdmin.length === 0) return alert("Bipe ao menos um serial antes de enviar.");
-
-            const tecNome = tecSel.options[tecSel.selectedIndex].getAttribute('data-nome');
-
-            const inserts = modemsPendentesAdmin.map(m => ({ serie: m.serie, modelo: m.modelo, tecnico_id: tecSel.value, status: 'estoque' }));
-            document.getElementById('adm_btn_modems').disabled = true;
-            const { error } = await sb.from('modems').insert(inserts);
-            document.getElementById('adm_btn_modems').disabled = false;
-
-            if (!error) {
-                syncPlanilha({ action: 'movimento_admin', admin: usuarioNome, tecnico: tecNome, drop: 0, conectores: 0, modems: modemsPendentesAdmin });
-                alert("Aparelhos transferidos com sucesso!");
-                modemsPendentesAdmin = [];
-                atualizarListaPendentesAdmin();
-            } else {
-                alert("Erro ao transferir aparelhos: " + error.message);
-            }
-        }
-
-        // Botão "Instalar app" (aparece só quando o Chrome permite instalar)
-        let eventoInstalar = null;
-        window.addEventListener('beforeinstallprompt', e => {
-            e.preventDefault();
-            eventoInstalar = e;
-            document.getElementById('btn-instalar').classList.remove('hidden');
         });
-        window.addEventListener('appinstalled', () => {
-            eventoInstalar = null;
-            document.getElementById('btn-instalar').classList.add('hidden');
-        });
-        async function instalarApp() {
-            if (!eventoInstalar) return;
-            eventoInstalar.prompt();
-            await eventoInstalar.userChoice;
-            eventoInstalar = null;
-            document.getElementById('btn-instalar').classList.add('hidden');
-        }
-
-        function usarUsuarioEmCache() {
-            if (navigator.onLine) return;
-            const u = lerJSON('tf_user', null);
-            if (u && u.id) iniciarApp({ id: u.id, email: u.email });
-        }
-        sb.auth.getSession().then(({ data }) => {
-            if (data?.session) iniciarApp(data.session.user);
-            else usarUsuarioEmCache();
-        }).catch(usarUsuarioEmCache);
-    </script>
-
-    <!-- SERVICE WORKER (PWA) -->
-    <script>
-        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(() => console.log('PWA ativado!'))
-                    .catch(err => console.log('Erro no PWA', err));
-            });
-        }
     </script>
 </body>
 </html>
